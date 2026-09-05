@@ -37,3 +37,17 @@ maintaining the system. Prefer documenting **why** something exists over
 
 Whoever makes the change (human or AI) updates the documentation in the same
 commit/PR — not as a follow-up "docs" task.
+
+## Machine-Specific Setup Notes Are an Exception
+
+Every file listed above is tracked in git and must apply to any contributor
+on any machine — no OS-, shell-, or sandbox-specific instructions belong in
+them. If a real environment quirk needs documenting (e.g. a managed dev
+environment that changes how a standard command must be invoked), it goes
+in a local `user-setup.md` at the repo root instead. That file is
+gitignored, per-developer, and exempt from the "update in the same PR" rule
+above — it isn't shared project documentation, so there's nothing to keep
+in sync across contributors. See `CLAUDE.md` "Important Constraints" and
+`rules.md` "Safety" for why this distinction matters (a past instance of
+mixing the two caused a machine-specific git workaround to leak into the
+shared project context file).

@@ -45,17 +45,46 @@ Requirement
 
 ## Pull Requests
 
-- Required before merging any feature/fix branch into `main`.
-- The project owner reviews and approves.
-- **Open item:** no remote repository/hosting platform is currently
-  configured (`git remote -v` is empty), so the concrete PR mechanism
-  (GitHub PR vs. DevSwarm's own merge workflow) is undecided. This must be
-  resolved before or at the first real PR.
+Hosted on GitHub: [harvoline/RoWAS](https://github.com/harvoline/RoWAS).
+Required before merging any feature/fix branch into `main`.
 
-## Environment-Specific Note
+**Opening a PR:**
 
-This workspace runs under DevSwarm. Native Windows shells cannot execute
-git commands here because the `.git` worktree pointer resolves to a WSL-only
-path. All git commands (`status`, `add`, `commit`, `branch`, etc.) must be
-run from WSL against the same directory via its `/mnt/c/...` path. See
-`CLAUDE.md` "Important Constraints" for the full explanation.
+- Use the PR template (`.github/pull_request_template.md`) — fill in the
+  summary, link the requirement/issue it addresses, and complete the
+  verification checklist (tests/lint/type-check actually run, docs updated).
+- `CODEOWNERS` currently routes every PR to the project owner for review.
+
+**Reviewing a PR:**
+
+- Use GitHub's native review actions on the "Files changed" tab:
+  - **Comment** — feedback that doesn't block merge on its own.
+  - **Request changes** — blocks merge (by convention, see below) until
+    resolved.
+  - **Approve** — signals the PR is ready to merge as-is.
+- Leave inline comments on specific lines where possible; use the overall
+  review summary for cross-cutting feedback.
+
+**Responding to review feedback:**
+
+- Address each comment with a new commit (don't rewrite/force-push history
+  that's already been reviewed — that hides what changed in response to
+  feedback). Reply to the comment thread explaining what changed, or why
+  not, if you disagree.
+- Re-request review once feedback is addressed.
+- Merge only once outstanding "Request changes" reviews are resolved and at
+  least one approval exists.
+
+**Enforcement status:** this is currently a **convention, not a technical
+gate** — RoWAS is a private repo on GitHub's Free plan, which blocks branch
+protection/rulesets, and there is only one collaborator today. See
+`rules.md` "Pull Request Review" for the full reasoning and the conditions
+under which this gets revisited.
+
+## Environment-Specific Notes
+
+This project must run identically regardless of OS or host environment —
+no environment-specific instructions belong in the tracked docs. If your
+machine needs a different invocation for a standard command (git, python,
+etc.), keep that in your own local, gitignored `user-setup.md` at the repo
+root rather than here. See `documentation-workflow.md`.

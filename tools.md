@@ -100,3 +100,32 @@ involved) and applying it with `gh pr edit --body-file`. Lesson recorded in
 `solutions.md`: any multi-line or backtick-containing text destined for a
 shell command in this environment should go through a file, not inline
 heredoc/quoting, when the command crosses the Windows-shell/WSL boundary.
+
+---
+
+## 2026-09-05 — Responding to PR #1 Review Feedback, Establishing Review Process
+
+**Tool used:** Claude Code, via `gh api` (to inspect PR review comments and
+check branch-protection/rulesets availability) and `git`/`gh` (to commit and
+push the fix).
+
+**Purpose:** Act on the owner's inline PR review comment (CLAUDE.md
+shouldn't contain machine-specific WSL detail) and their separate request
+for a "proper team flow" with commentable/approvable/rejectable PRs.
+
+**What the tool did:** Fetched the actual review comment text via
+`gh api repos/.../pulls/1/comments` rather than assuming its content from
+the PR diff. Checked real GitHub API responses for branch protection and
+rulesets before proposing any enforcement approach — both returned
+403 (Free-plan/private-repo restriction) — rather than assuming they'd be
+available. Presented the resulting trade-offs (convention-only vs.
+paid-upgrade vs. public) to the owner instead of picking one.
+
+**Accepted / rejected / modified:** Owner selected "convention only, no
+technical gate" for enforcement, and "yes, add both" for PR
+template + CODEOWNERS. Implemented as specified — see `solutions.md` §4.
+
+**Limitations discovered:** GitHub's branch-protection and rulesets APIs
+are both unavailable for private repositories below the Pro tier — this
+wasn't previously known and materially changed what "proper team flow"
+could mean technically (process discipline now, technical gate later).

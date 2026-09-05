@@ -63,14 +63,12 @@ pip install --upgrade pip
 pip install -e ".[dev]"
 ```
 
-> **Environment note:** this repository is managed by DevSwarm, which stores the
-> actual git object database inside a WSL (Ubuntu) filesystem path
-> (`/var/www/rows`) and exposes this directory as a git *worktree* mirrored onto
-> the Windows filesystem. Git commands run from a native Windows shell **will
-> fail** because the `.git` worktree pointer references a Linux-only path. Run
-> all git commands from inside WSL against this same path (via its `/mnt/c/...`
-> mount). File edits work normally from either side. See
-> [`rules.md`](rules.md) for details.
+> **Environment note:** if a standard command in this guide doesn't behave as
+> documented on your machine (e.g. a sandboxed or managed dev environment
+> that routes git or Python differently), that's a local quirk, not a
+> project issue. Create a `user-setup.md` file at the repo root (gitignored,
+> never shared) documenting the workaround for your machine — see
+> [`documentation-workflow.md`](documentation-workflow.md).
 
 ## Running the CLI
 
@@ -104,7 +102,10 @@ TDD cycle this project follows. In short:
 1. One feature/fix per branch, branched from `main`.
 2. Write a failing test before writing implementation code.
 3. Small, coherent commits with messages that explain *why*.
-4. Pull request review before merging into `main`.
+4. Pull request review before merging into `main` — see
+   `coding-workflow.md` "Pull Requests" for how reviews/approvals/requested
+   changes work in this repo today (convention-enforced, not yet a
+   technical gate — see Known Limitations below).
 
 ## Documentation Map
 
@@ -118,6 +119,10 @@ TDD cycle this project follows. In short:
 | [`testing-workflow.md`](testing-workflow.md) | TDD cycle and test categorisation strategy |
 | [`rules.md`](rules.md) | Non-negotiable project and safety rules |
 | [`documentation-workflow.md`](documentation-workflow.md) | When/how documentation must be updated |
+
+`user-setup.md` (gitignored, not in this table) may exist locally for
+machine-specific setup quirks — it's per-developer, not shared project
+documentation.
 
 ## Known Limitations / Open Decisions
 
@@ -135,6 +140,11 @@ TDD cycle this project follows. In short:
 - **Dependency management is intentionally minimal**: only pytest, pytest-cov,
   ruff, and mypy as dev dependencies. No runtime dependencies exist yet
   because there is no functionality requiring them.
+- **PR review is convention-enforced, not technically gated.** RoWAS is a
+  private repo on GitHub's Free plan, which blocks branch protection and
+  rulesets; there is also currently only one collaborator. See `rules.md`
+  "Pull Request Review" — revisit if a second collaborator joins or the
+  plan is upgraded.
 
 ## Technical Debt
 

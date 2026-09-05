@@ -116,16 +116,13 @@ describes, not as an afterthought.
 
 ## Important Constraints
 
-- **Git must be operated from WSL, not native Windows shells, in this
-  DevSwarm workspace.** The repository's actual git object database lives at
-  `/var/www/rows` inside WSL (Ubuntu-20.04); the Windows-visible `.git` file
-  is a worktree pointer into that Linux path and cannot be resolved by
-  Windows-native git. From WSL, the same directory is reachable at
-  `/mnt/c/Users/Afif/.devswarm/repos/2/dfb88366/initial-setup`. This is an
-  environment fact discovered while establishing the foundation — see
-  [`solutions.md`](solutions.md) for the diagnostic trail. Do not attempt to
-  "fix" the `.git` pointer files; this is expected DevSwarm architecture,
-  not corruption.
+- This project must remain portable: no assumption about OS, shell, or
+  sandbox/host environment belongs in this file. If your machine has a
+  local quirk (e.g. a sandboxed dev environment that changes how a
+  standard command must be invoked), document it in a local, gitignored
+  `user-setup.md` at the repo root instead — see
+  [`documentation-workflow.md`](documentation-workflow.md). Check for one
+  before assuming a standard command will behave as documented here.
 - Remote repository: `origin` is
   [github.com/harvoline/RoWAS](https://github.com/harvoline/RoWAS).
   PRs are opened and reviewed there (PR #1 was the foundation PR).
@@ -145,14 +142,18 @@ describes, not as an afterthought.
 | setuptools build backend | Ubiquitous, avoids extra tooling dependency | Confirmed |
 | Repository hosting / PR platform | GitHub: `harvoline/RoWAS` | **Confirmed** |
 | CI/CD strategy | Deferred entirely — revisit once there's more code | **Confirmed (deferred)** |
+| PR review enforcement | Convention only (no branch protection) — private repo on GitHub Free blocks it; also currently a solo collaborator. Revisit if the plan is upgraded or a second collaborator joins | **Confirmed (interim)** |
 
 ## Things an AI/Developer Must Know Before Modifying This Project
 
 1. **Do not implement robot allocation business logic** until explicitly
    instructed — this was an explicit constraint from the project owner during
    foundation setup, and may still apply until lifted.
-2. Run git commands through WSL (see Important Constraints above), not
-   native Windows git.
+2. Check for a local, gitignored `user-setup.md` before assuming a standard
+   command (e.g. `git`) will behave exactly as documented — some
+   sandboxed/managed environments need a different invocation. Never add
+   machine-specific workarounds to this file (`CLAUDE.md`) or other tracked
+   docs; they belong in `user-setup.md`.
 3. Every new business feature needs: a failing test first, an entry in
    `app-workflow.md` describing its flow, and (if a significant technical
    decision was involved) an entry in `solutions.md`.

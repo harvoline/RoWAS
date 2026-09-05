@@ -12,16 +12,15 @@ repository. They do not get silently overridden by convenience.
 - Never overwrite important user work without approval.
 - If a command may be destructive and there is any uncertainty: **stop and
   ask for approval** before running it.
-- **Do not "fix" the `.git` worktree pointer files in this repository.**
-  They intentionally point to a Linux path (`/var/www/rows`) managed by
-  DevSwarm. This is expected architecture, not corruption — see
-  [`CLAUDE.md`](CLAUDE.md) "Important Constraints." Editing them risks
-  breaking the workspace's connection to the real git object database.
-- **All git operations in this workspace must run through WSL** (see
-  `CLAUDE.md`), never through a native Windows shell — native Windows git
-  cannot resolve the worktree pointer and will fail or, worse, could be
-  worked around in a way that desynchronises the Windows mirror from the
-  real repository.
+- **Do not "fix" git internals (`.git` files, worktree pointers, etc.) you
+  don't fully understand just because a command failed unexpectedly.**
+  Some managed/sandboxed environments deliberately route git through a
+  different path or shell — that's an environment quirk to document in a
+  local `user-setup.md` (see `documentation-workflow.md`), not something to
+  repair by editing git's internal files. If a git command fails in a way
+  that looks like infrastructure rather than a real repo problem, diagnose
+  first (e.g. check whether it works from a different shell) before
+  touching anything inside `.git`.
 
 ## Engineering
 
@@ -63,6 +62,24 @@ considered decision, not an unresolved gap — see `solutions.md` for the full
 reasoning. Do not add CI/CD configuration without raising it again first;
 treat any future addition as a new decision to be proposed, not a
 resumption of "the open item."
+
+## Pull Request Review
+
+Every pull request requires review before merge — reviewers use GitHub's
+Approve / Request changes / Comment actions, and all review comments must be
+addressed (either by a follow-up commit or an explicit reply explaining why
+not) before merging. This is a **process rule, not currently a technical
+gate**: RoWAS is a private repository on GitHub's Free plan, which blocks
+both classic branch protection and rulesets (confirmed via the API:
+"Upgrade to GitHub Pro or make this repository public"), and there is
+currently only one collaborator. Nothing stops a self-merge today except
+discipline.
+
+**Do not treat the absence of a technical gate as permission to skip
+review.** If/when a second collaborator joins, or the plan is upgraded, or
+the repo goes public, revisit this and add real branch protection
+(required approvals, no direct pushes to `main`) — see `CLAUDE.md` Known
+Decisions for status.
 
 ## Business Logic Freeze
 

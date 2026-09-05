@@ -350,3 +350,139 @@ Revisit CI/CD the moment either becomes true: (a) a second contributor
 joins, or (b) `main` starts carrying real business logic where a broken
 merge would have user-facing consequences. At that point, option 1
 (event-driven GitHub Actions) is the standing recommendation.
+
+---
+
+## 4. Making CLAUDE.md Portable and Establishing the PR Review Process
+
+### Problem
+
+Two issues surfaced from the owner's review of PR #1: (1) `CLAUDE.md`
+contained a machine-specific detail (the DevSwarm/WSL git redirection) that
+would be actively misleading to a contributor on Mac/Linux/plain Windows,
+and (2) the project needed an actual team review workflow (comment,
+approve, request changes) rather than an implicit assumption that PRs get
+merged after being looked at.
+
+### Context
+
+The owner correctly flagged, via an inline PR review comment on
+`CLAUDE.md` line 119, that the project cannot control where it will be run,
+so environment-specific constraints shouldn't live in a file meant to
+describe the *project*. Separately, they asked for the repository to be
+set up "like a proper team flow" with commenting and approve/reject
+reviews.
+
+### Requirements
+
+- `CLAUDE.md` (and other tracked docs) must describe the project only —
+  portable across any contributor's machine.
+- Machine-specific quirks still need to be written down somewhere, or the
+  next person to hit them re-diagnoses from scratch.
+- A real PR review process (comment / approve / request changes) needs to
+  exist, ideally with the option to enforce it technically.
+
+### Constraints
+
+Discovered while investigating enforcement options: RoWAS is a **private**
+repository on GitHub's **Free** plan. Both the classic branch-protection API
+(`/branches/main/protection`) and the newer rulesets API
+(`/repos/.../rulesets`) return `403: "Upgrade to GitHub Pro or make this
+repository public to enable this feature."` There is also currently only
+one collaborator (`harvoline`, admin) — even with protection enabled,
+GitHub does not allow a PR author to approve their own pull request, so a
+"1 approval required" rule would deadlock a solo contributor's merges.
+
+### Analysis
+
+**For the portability problem:** considered (a) just deleting the
+WSL-specific content, losing the diagnostic knowledge, versus (b) moving it
+to a new file that is explicitly *not* part of the shared/portable
+documentation set. Chose (b) — a gitignored `user-setup.md` at the repo
+root, per the owner's suggestion, with `documentation-workflow.md` updated
+to define this as a deliberate exception (per-machine, not synced, not
+subject to the "update in the same PR" rule that governs every other doc).
+
+**For the review process:** presented three enforcement options once the
+platform constraint was known: (1) convention only — document the process,
+no technical gate, free, but relies on discipline; (2) upgrade to GitHub
+Pro/Team — real enforcement, has a cost, requires the owner's billing
+action (not something to do unilaterally); (3) make the repo public —
+free enforcement, but exposes proprietary code. Also asked separately
+whether to add a PR template and CODEOWNERS regardless of which
+enforcement path was chosen, since those improve review quality even
+without a technical gate.
+
+### Delegation
+
+Not applicable.
+
+### Decision
+
+- `CLAUDE.md`'s WSL-specific bullet replaced with a generic instruction to
+  check a local `user-setup.md`; the actual WSL content now lives there
+  (gitignored, not tracked).
+- `rules.md`, `coding-workflow.md`, and `README.md` had their
+  environment-specific language generalized the same way.
+- PR review: **convention only**, documented as a non-negotiable process
+  rule in `rules.md` ("Pull Request Review") and detailed in
+  `coding-workflow.md` ("Pull Requests") — Comment/Request changes/Approve
+  via GitHub's native review UI, feedback addressed via follow-up commits,
+  merge only after outstanding "Request changes" are resolved and at least
+  one approval exists.
+- Added `.github/pull_request_template.md` (summary, verification
+  checklist, documentation checklist) and `.github/CODEOWNERS` (`* @harvoline`
+  for now).
+
+### Reasoning
+
+The portability fix directly serves "maintainability" and "clarity" for
+future contributors — a Mac/Linux developer reading a hardcoded WSL
+workaround in `CLAUDE.md` would reasonably assume it applies to them, or
+waste time figuring out that it doesn't.
+
+Convention-only enforcement was the owner's explicit choice given the
+platform limitation and solo-collaborator reality — upgrading the plan or
+going public are both real options but are billing/visibility decisions
+outside what should be assumed on the project's behalf. The PR
+template/CODEOWNERS were added regardless of the enforcement decision
+because they cost nothing and make review meaningful even without a
+technical gate (a checklist plus explicit routing beats an ad hoc review).
+
+### Implementation Order
+
+1. Confirm enforcement options are actually blocked (checked the API
+   directly rather than assuming) before presenting them as trade-offs.
+2. Get the owner's decision on enforcement level and PR template/CODEOWNERS
+   before making repo-wide changes.
+3. Create `user-setup.md`, add it to `.gitignore`.
+4. Strip machine-specific content from `CLAUDE.md`, `rules.md`,
+   `coding-workflow.md`, `README.md`; add the generic "check user-setup.md"
+   pointer in each.
+5. Add the PR review process to `rules.md` and `coding-workflow.md`.
+6. Add `.github/pull_request_template.md` and `.github/CODEOWNERS`.
+7. Verify (`pytest`/`ruff`/`mypy`) still pass — none of this touched
+   application code, but re-verified anyway rather than assuming docs-only
+   changes can't break anything.
+
+### Trade-offs
+
+- **Pro:** shared docs are now genuinely portable; the diagnostic knowledge
+  about the WSL quirk isn't lost, just relocated to where it belongs.
+- **Con:** convention-only review enforcement means nothing technically
+  stops a self-merge without review today. Accepted explicitly by the
+  owner; the trigger conditions for revisiting are written down (`rules.md`,
+  `CLAUDE.md` Known Decisions) so it isn't forgotten.
+
+### Result
+
+PR #1 updated in response to the owner's review comment. Review process
+now has a documented, if not yet technically enforced, shape: template,
+routing (CODEOWNERS), and an explicit comment/approve/request-changes cycle
+described in `coding-workflow.md`.
+
+### Future Considerations
+
+Add real branch protection (required approvals, no direct pushes to
+`main`, dismiss stale approvals on new commits) the moment either becomes
+true: a second collaborator joins, or the plan is upgraded to Pro/Team.

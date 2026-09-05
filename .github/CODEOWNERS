@@ -1,0 +1,4 @@
+# Every file in this repository currently routes to the project owner for
+# review. Split this out by directory once more contributors join
+# (e.g. `src/robot_allocation/allocation/ @someone`).
+* @harvoline

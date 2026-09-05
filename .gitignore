@@ -21,3 +21,7 @@ htmlcov/
 .vscode/
 .idea/
 .DS_Store
+
+# Per-machine setup notes (see documentation-workflow.md) — never shared,
+# each contributor keeps their own local copy if they need one at all.
+user-setup.md
