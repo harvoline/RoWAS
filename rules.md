@@ -55,12 +55,14 @@ Do not silently change an established architectural decision recorded in
 
 ## CI/CD Checkpoint
 
-**When preparing the first pull request, CI/CD strategy must be explicitly
-revisited with the project owner** before any CI/CD configuration is added.
-This includes re-evaluating the previously-discussed idea of a 3-hour
-scheduled build — that idea is provisional, not a requirement, until this
-checkpoint happens and a decision is recorded in `CLAUDE.md` and
-`README.md`.
+**Resolved 2026-09-05, at PR #1 (the foundation PR).** The project owner
+was presented with the platform (GitHub, `harvoline/RoWAS`), an event-driven
+GitHub Actions option, and the previously-discussed 3-hour scheduled build,
+and chose to **defer CI/CD entirely** rather than adopt either. This is a
+considered decision, not an unresolved gap — see `solutions.md` for the full
+reasoning. Do not add CI/CD configuration without raising it again first;
+treat any future addition as a new decision to be proposed, not a
+resumption of "the open item."
 
 ## Business Logic Freeze
 

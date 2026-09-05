@@ -126,11 +126,14 @@ describes, not as an afterthought.
   [`solutions.md`](solutions.md) for the diagnostic trail. Do not attempt to
   "fix" the `.git` pointer files; this is expected DevSwarm architecture,
   not corruption.
-- No remote repository is configured (`git remote -v` is empty). PR hosting
-  platform is an open decision.
-- CI/CD is explicitly **not yet decided**. Do not add scheduled builds,
-  GitHub Actions, or any CI config without revisiting this at the "first PR"
-  checkpoint (see [`rules.md`](rules.md)).
+- Remote repository: `origin` is
+  [github.com/harvoline/RoWAS](https://github.com/harvoline/RoWAS).
+  PRs are opened and reviewed there (PR #1 was the foundation PR).
+- CI/CD is explicitly **deferred by owner decision** (2026-09-05, at the
+  "first PR" checkpoint — see [`rules.md`](rules.md) and
+  [`solutions.md`](solutions.md)). No GitHub Actions workflow exists. Do not
+  add one without raising it again first — this was a considered decision,
+  not an oversight.
 
 ## Known Decisions
 
@@ -140,8 +143,8 @@ describes, not as an afterthought.
 | src-layout package structure | Standard practice, avoids import footguns | Confirmed |
 | pytest + ruff + mypy(strict) | Minimal, standard, covers testing/lint/types | Confirmed |
 | setuptools build backend | Ubiquitous, avoids extra tooling dependency | Confirmed |
-| CI/CD strategy | Not yet decided — explicitly deferred | **Open** |
-| Repository hosting / PR platform | Not yet decided | **Open** |
+| Repository hosting / PR platform | GitHub: `harvoline/RoWAS` | **Confirmed** |
+| CI/CD strategy | Deferred entirely — revisit once there's more code | **Confirmed (deferred)** |
 
 ## Things an AI/Developer Must Know Before Modifying This Project
 

@@ -46,6 +46,12 @@ shortlist (TypeScript, Python, Java, C#) presented during foundation setup;
 Python was selected. See [`solutions.md`](solutions.md) for the reasoning
 behind the supporting tool choices (ruff, mypy, pytest, src-layout).
 
+## Repository
+
+Hosted on GitHub: [harvoline/RoWAS](https://github.com/harvoline/RoWAS).
+`main` is the stable branch; feature/fix work happens on branches and merges
+via reviewed pull requests (see `coding-workflow.md`).
+
 ## Installation
 
 Requires Python 3.10+.
@@ -116,13 +122,16 @@ TDD cycle this project follows. In short:
 ## Known Limitations / Open Decisions
 
 - **No business logic yet.** This is intentional — see project instructions.
-- **CI/CD is not yet implemented.** It is an explicitly open decision, to be
-  revisited when the first pull request is prepared (see `rules.md` and
-  `coding-workflow.md`). A previously discussed idea (build every 3 hours on
-  approved PR changes) is provisional, not decided.
-- **No remote repository is configured.** `git remote -v` returns nothing.
-  Pull request hosting/platform (e.g. GitHub) has not been decided; this
-  blocks implementing any PR-triggered CI/CD.
+- **Repository hosting: decided.** GitHub, at
+  [harvoline/RoWAS](https://github.com/harvoline/RoWAS) (`origin`). PRs are
+  reviewed there.
+- **CI/CD: explicitly deferred.** At the first-PR checkpoint (2026-09-05),
+  the project owner chose to defer CI/CD entirely for now rather than add a
+  GitHub Actions workflow. No CI config exists in this repo. The previously
+  discussed 3-hour scheduled build was considered and declined in favour of
+  event-driven checks — but even that was deferred, not adopted, pending
+  more code to justify it. See `solutions.md` for the full reasoning; revisit
+  when it's worth the setup cost.
 - **Dependency management is intentionally minimal**: only pytest, pytest-cov,
   ruff, and mypy as dev dependencies. No runtime dependencies exist yet
   because there is no functionality requiring them.

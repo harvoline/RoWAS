@@ -235,3 +235,118 @@ sessions, without any change to the repository itself.
 If this workspace is ever migrated off DevSwarm or the WSL distribution
 changes, this constraint should be re-verified and the documentation
 updated or removed accordingly.
+
+---
+
+## 3. Configuring the Remote Repository and Resolving the CI/CD Checkpoint
+
+### Problem
+
+The foundation work existed only as local commits. Two things blocked
+opening the first pull request: no remote repository was configured, and
+CI/CD strategy was explicitly left as an open decision pending this exact
+checkpoint (see `rules.md` "CI/CD Checkpoint").
+
+### Context
+
+The project owner supplied a GitHub repository URL
+(`https://github.com/harvoline/RoWAS.git`) to use as the remote. This is
+also, by the project's own process, the moment CI/CD must be revisited —
+"When we are preparing for the first Pull Request, STOP and explicitly ask."
+
+### Requirements
+
+- Confirm the remote is real and usable before pushing anything to it.
+- Get explicit approval before pushing/opening a PR — pushing code and
+  opening a PR are actions visible to others and affect shared state.
+- Present CI/CD alternatives with trade-offs and let the owner decide,
+  rather than silently implementing (or silently skipping) anything.
+
+### Constraints
+
+- Must not push destructively or assume push is wanted just because a URL
+  was provided — confirmed the specific plan (push `main`, push
+  `initial-setup`, open PR) before executing it.
+
+### Analysis
+
+Checked the remote read-only first (`git ls-remote`) before adding it as
+`origin`: reachable, zero refs (a genuinely empty repository, not one with
+existing history that could conflict). Confirmed `gh` was already
+authenticated as the repository owner (`harvoline`), so PR creation would
+not require additional credential setup.
+
+For CI/CD, presented three options once the platform (GitHub) was known:
+
+1. GitHub Actions on PR open/update + push to `main` — event-driven,
+   fastest feedback, standard for a repo this size.
+2. The same, plus the previously-discussed 3-hour scheduled build — the
+   schedule adds no value for catching code issues (PR-triggered checks
+   already run within seconds of a push), so its only justification would
+   be catching drift unrelated to code changes (e.g. dependency rot) —
+   speculative at this stage, no dependencies exist yet to drift.
+3. Defer CI/CD entirely — no workflow file at all yet.
+
+### Delegation
+
+Not applicable.
+
+### Decision
+
+- **Remote:** `origin` = `https://github.com/harvoline/RoWAS.git`. Pushed
+  `main` (stable base) and `initial-setup` (foundation work), opened PR #1
+  from `initial-setup` into `main`.
+- **CI/CD:** the project owner chose to **defer CI/CD entirely** — option 3.
+  No GitHub Actions workflow was added.
+
+### Reasoning
+
+Deferring is reasonable at this stage: there is no business logic yet, the
+dependency set is four dev-only packages, and local verification
+(`pytest`/`ruff`/`mypy`) is already enforced as part of the definition of
+"done" for any change (see `testing-workflow.md`). A CI workflow would
+currently just re-run the same three commands the developer already ran
+locally, for a project with a single contributor so far — real value
+appears once there's enough velocity or enough contributors that "did the
+developer actually run the checks" becomes a meaningful question. This
+was the owner's call to make, not an inference.
+
+### Implementation Order
+
+1. `git ls-remote` (read-only) to confirm the remote is real and empty.
+2. Confirm plan with the owner (push + PR; CI/CD strategy) before acting.
+3. `git remote add origin`, push `main`, push `initial-setup`.
+4. `gh pr create` — hit a shell-quoting bug where backticks in the PR body
+   were evaluated as command substitution by an intermediate shell layer
+   (nested `bash -c` invocations across the Windows/WSL boundary), silently
+   stripping code-formatted terms from the body. Fixed by writing the body
+   to a file and using `gh pr edit --body-file`, sidestepping shell
+   quoting entirely. Recorded in `tools.md` as a discovered risk: **avoid
+   passing markdown with backticks through nested shell `-c` strings in
+   this environment — write to a file first.**
+5. Updated `CLAUDE.md`, `README.md`, and `rules.md` to reflect both
+   decisions as confirmed, not open.
+
+### Trade-offs
+
+- **Pro:** zero CI maintenance burden while the project has no business
+  logic; nothing to get wrong in a workflow file that isn't earning its
+  keep yet.
+- **Con:** no automated gate stops a broken commit from landing on `main`
+  if a future contributor forgets to run checks locally. Accepted
+  explicitly by the owner; revisit once that risk becomes real (more
+  contributors, or `main` starts carrying real functionality).
+
+### Result
+
+`origin` configured and both branches pushed. PR #1 open at
+`https://github.com/harvoline/RoWAS/pull/1`, awaiting owner review. No CI/CD
+configuration exists. Both decisions recorded as **Confirmed** in
+`CLAUDE.md`'s Known Decisions table.
+
+### Future Considerations
+
+Revisit CI/CD the moment either becomes true: (a) a second contributor
+joins, or (b) `main` starts carrying real business logic where a broken
+merge would have user-facing consequences. At that point, option 1
+(event-driven GitHub Actions) is the standing recommendation.

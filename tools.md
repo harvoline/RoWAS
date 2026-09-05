@@ -70,3 +70,33 @@ reject.
   undecided — both are flagged as open items rather than resolved by the
   AI, per the project's instruction to defer CI/CD decisions to a later
   checkpoint.
+
+---
+
+## 2026-09-05 — Remote Configuration and PR Creation
+
+**Tool used:** Claude Code, via `gh` CLI (GitHub) and `git`, both invoked
+through WSL for the reasons recorded in `solutions.md` §2.
+
+**Purpose:** Wire up the GitHub remote the project owner provided
+(`harvoline/RoWAS`), push the foundation work, and open the first PR for
+review — while resolving the CI/CD checkpoint along the way.
+
+**What happened:** Verified the remote was reachable and empty before
+touching it, confirmed the specific push/PR plan with the owner, then
+pushed `main` and `initial-setup` and opened PR #1 via `gh pr create`.
+
+**Limitation/risk discovered:** `gh pr create --body "$(cat <<'EOF' ... EOF)"`
+run through a nested `bash -c` (this tool's shell -> `wsl.exe` -> WSL bash)
+had its heredoc quoting broken — backtick-wrapped code spans in the PR body
+(e.g. `` `pytest` ``) were evaluated as command substitution by an
+intermediate shell and silently vanished from the body, and the shell also
+tried to execute `pytest`/`ruff`/`mypy` as commands (all "not found", since
+they only exist inside the project's venv). **Not accepted as-is** — caught
+by reviewing the created PR's actual body via `gh pr view --json body`
+rather than trusting the create command's apparent success. **Fixed** by
+writing the body to a plain file with the `Write` tool (no shell escaping
+involved) and applying it with `gh pr edit --body-file`. Lesson recorded in
+`solutions.md`: any multi-line or backtick-containing text destined for a
+shell command in this environment should go through a file, not inline
+heredoc/quoting, when the command crosses the Windows-shell/WSL boundary.
