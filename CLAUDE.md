@@ -114,6 +114,20 @@ See [`documentation-workflow.md`](documentation-workflow.md). Summary:
 documentation is updated in the same change as the code/decision it
 describes, not as an afterthought.
 
+## Multi-Agent Workflow
+
+See [`orchestrator-workflow.md`](orchestrator-workflow.md) in full. Summary:
+the project owner talks only to the Orchestrator (the main Claude Code
+session). For every meaningful requirement, the Orchestrator runs a
+coverage assessment across business/domain/architecture/testing/security/
+performance/UX/documentation/ops/production-readiness, and delegates only
+the dimensions that genuinely need specialist investigation to the
+read-only specialist subagents in [`.claude/agents/`](.claude/agents/).
+Coverage is mandatory; agent participation is optional — the Orchestrator
+must be able to explain why any dimension wasn't delegated, not just that
+it wasn't mentioned. The Orchestrator always owns synthesis, implementation,
+and commits.
+
 ## Important Constraints
 
 - This project must remain portable: no assumption about OS, shell, or
@@ -161,3 +175,7 @@ describes, not as an afterthought.
    checkpoint conversation described in `rules.md`.
 5. Keep `mypy --strict` and `ruff check .` passing at all times — treat
    failures as build breaks, not warnings to defer.
+6. For any meaningful requirement, run the coverage assessment in
+   `orchestrator-workflow.md` before jumping to implementation — even if it
+   concludes most dimensions are "not relevant," that conclusion must be
+   conscious, not silent.

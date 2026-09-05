@@ -486,3 +486,184 @@ described in `coding-workflow.md`.
 Add real branch protection (required approvals, no direct pushes to
 `main`, dismiss stale approvals on new commits) the moment either becomes
 true: a second collaborator joins, or the plan is upgraded to Pro/Team.
+
+---
+
+## 5. Establishing the Multi-Agent Orchestrator Workflow
+
+### Problem
+
+All engineering work so far has gone through a single Claude Code session
+with no structured way to guarantee that a given change was examined from
+every relevant engineering angle (business, architecture, security,
+performance, UX, etc.) rather than whichever angles happened to occur to
+that one session. The project owner wants to keep talking to a single
+Orchestrator, while trusting that important concerns won't be missed
+because nobody thought to raise them.
+
+### Context
+
+The project owner supplied a detailed process specification (agent
+hierarchy, coverage model, risk-based review levels, output contract,
+synthesis/conflict-resolution process, approval boundaries) and explicitly
+scoped the first task as establishing this workflow — not implementing
+robot allocation logic.
+
+### Requirements
+
+- The project owner should only need to talk to one agent.
+- Every meaningful requirement gets a conscious coverage assessment across
+  a fixed list of engineering dimensions.
+- Specialist involvement is selected per-requirement, not fixed.
+- Parallel vs. dependent delegation must be explicit.
+- Findings must be structured (Objective/Findings/Risks/.../Confidence) so
+  they can be synthesized rather than just concatenated.
+- No additional orchestration layer (sub-orchestrators) unless genuinely
+  justified — and if not justified now, that absence must be explained,
+  not just assumed.
+
+### Constraints
+
+- This project has no ticketing/requirements-tracking tool, one owner, one
+  repository, and (as of this writing) zero business logic — any process
+  introduced must be proportionate to that, not to a larger team.
+- Must not implement robot allocation functionality as part of this task
+  (explicit instruction).
+
+### Analysis
+
+Considered two implementation approaches for "specialist agents":
+
+1. **Purely conceptual** — the Orchestrator mentally adopts each
+   specialist's lens and writes prompts ad hoc when delegating to the
+   generic `general-purpose`/`Explore` agents.
+2. **Concrete, reusable subagent definitions** under `.claude/agents/`, one
+   file per specialist role, each with a fixed focus, output contract, and
+   restricted tool access — invoked by name via the `Agent` tool.
+
+Chose (2): a fixed roster with a fixed output contract is more reliable at
+guaranteeing "a concern doesn't get missed because nobody thought to ask
+about it" than re-deriving a good prompt from scratch each time, which is
+exactly the failure mode this whole workflow exists to prevent. The
+specialist roster mirrors the project owner's own enumerated roles exactly
+(Business, Domain, Architecture, Testing, Security, Performance, UX,
+Documentation, DevOps, Production Readiness) rather than inventing new
+ones — ten agents, matching ten genuinely distinct concerns, not padding
+for the appearance of thoroughness ("no agent theatre").
+
+Also considered whether specialists should be able to edit files directly
+(e.g. `documentation-agent` drafting doc updates in place). Decided against
+it project-wide: keeping all ten specialists read-only (plus non-destructive
+`Bash` where a role needs to verify a real command, e.g. `testing-agent`
+running `pytest`) means concurrent investigations can never collide on a
+file edit, and the Orchestrator remains the single point of accountability
+for what actually lands in the repo. Flagged as an open question in
+`orchestrator-workflow.md` rather than treated as unquestionably settled.
+
+Considered whether an "Implementation Agent" subagent should exist,
+per the project owner's own role list. Decided against a separate
+implementation subagent: this project's TDD discipline
+(`testing-workflow.md`) depends on tight RED→GREEN→REFACTOR continuity,
+and the project owner's own constraint on that role ("must not
+independently override major architectural decisions") is trivially
+guaranteed by not giving any subagent edit access, rather than by trusting
+delegation boundaries to hold under a separate agent's judgment.
+
+Considered whether "Devil's Advocate" needed its own persistent persona
+file. Decided against it: a dedicated file would either duplicate an
+existing specialist's focus or need to be deliberately generic, and the
+project owner's own description of the role ("independent from the
+original recommendation where possible") is better served by dynamically
+picking whichever existing specialist is least invested in the original
+recommendation, per requirement.
+
+Considered whether to introduce a Master/Domain/Technical/Operations
+orchestration layer now, since the project owner's spec describes one as a
+future possibility. Rejected for now — documented explicitly in
+`orchestrator-workflow.md` ("Why No Additional Orchestration Layer Now")
+with the specific re-evaluation triggers, per the project owner's own
+instruction not to add layers "merely because the architecture allows it."
+
+### Delegation
+
+None — this task was explicitly scoped to establish the workflow itself,
+not to exercise it on a real requirement yet.
+
+### Decision
+
+- New `orchestrator-workflow.md` defining: roles, hierarchy, coverage
+  model, risk-based review levels (1-4, calibrated with this project's own
+  examples), the Orchestrator/specialist boundary, the agent output
+  contract, synthesis process, conflict resolution, requirements
+  traceability, Definition of Done additions, TDD/post-implementation
+  review integration, decision documentation (reusing `solutions.md`, no
+  new file), limitations of the architecture, and explicit "no additional
+  layer yet" reasoning.
+- Ten new specialist subagent definitions under `.claude/agents/`:
+  `business-agent`, `domain-agent`, `architecture-agent`, `testing-agent`,
+  `security-agent`, `performance-agent`, `ux-agent`,
+  `documentation-agent`, `devops-agent`, `production-readiness-agent` — all
+  read-only (plus scoped non-destructive `Bash` for the roles that need to
+  verify something real), all following the same output contract.
+- `documentation-workflow.md`, `README.md`, `CLAUDE.md`, and `rules.md`
+  updated with pointers to the new file/directory, without duplicating
+  content that already lives in `rules.md` (approval boundaries) or
+  `solutions.md` (decision-record format).
+
+### Reasoning
+
+Every design choice above traces back to the project owner's own stated
+principle: coverage is mandatory, agent participation is optional. A fixed,
+reusable roster with a fixed output contract makes "was this concern
+considered" answerable and auditable, rather than dependent on whichever
+prompt the Orchestrator happened to write in the moment. Declining to add a
+new orchestration layer, a dedicated Implementation agent, or a dedicated
+Devil's Advocate agent all follow the same "no agent theatre" instruction:
+each of those would have added structure without solving a coordination
+problem that actually exists yet at this project's current size (one
+owner, one repo, no business logic).
+
+### Implementation Order
+
+1. Reviewed all existing project documentation (`CLAUDE.md`, `rules.md`,
+   `README.md`, `coding-workflow.md`, `testing-workflow.md`,
+   `documentation-workflow.md`, `app-workflow.md`, `solutions.md`,
+   `tools.md`) to ground the new workflow in what already exists rather
+   than duplicating or contradicting it.
+2. Wrote `orchestrator-workflow.md`.
+3. Wrote the ten specialist agent definitions.
+4. Cross-linked the new file/directory from every doc whose own "when to
+   update" trigger table required it.
+5. Logged this decision here and in `tools.md`.
+
+### Trade-offs
+
+- **Pro:** the project owner's stated coverage principle now has a
+  concrete mechanism (fixed roster + coverage assessment + output
+  contract) rather than remaining a purely aspirational instruction.
+- **Con:** ten specialist files are more to maintain than zero — mitigated
+  by most of them being genuinely reusable across any future requirement,
+  and by three of the ten (`devops-agent`, `production-readiness-agent`,
+  and to a lesser extent `security-agent`) being explicitly documented as
+  currently dormant/low-signal until the project has CI/CD, a deployed
+  system, or external input, respectively.
+- **Con:** read-only specialists mean every specialist finding still has
+  to pass through the Orchestrator to become a file change — a
+  deliberate bottleneck, accepted because it keeps a single point of
+  accountability for what lands in the repo.
+
+### Result
+
+A working, documented multi-agent delegation model exists and is ready to
+be exercised on the first real requirement. No business logic was
+implemented, per the explicit scope of this task.
+
+### Future Considerations
+
+- Re-evaluate the read-only specialist boundary if it becomes a genuine
+  bottleneck (see `orchestrator-workflow.md` "Open Questions").
+- Re-evaluate whether `devops-agent`/`production-readiness-agent` are
+  pulling their weight once CI/CD or a deployed system exists.
+- Re-evaluate the "no additional orchestration layer" decision against the
+  specific triggers documented in `orchestrator-workflow.md`, not on a
+  fixed schedule.

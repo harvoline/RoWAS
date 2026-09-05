@@ -81,6 +81,22 @@ the repo goes public, revisit this and add real branch protection
 (required approvals, no direct pushes to `main`) — see `CLAUDE.md` Known
 Decisions for status.
 
+## Multi-Agent Workflow
+
+See `orchestrator-workflow.md` for the full delegation model. The "Safety"
+and "Changes" rules above apply identically regardless of whether a human
+or a specialist subagent produced a recommendation — a specialist agent's
+output is a recommendation to the Orchestrator, never an authorization to
+act. Two additions specific to multi-agent delegation:
+
+- Introducing a new orchestration layer (sub-orchestrators) requires the
+  documented justification in `orchestrator-workflow.md` to be updated and
+  presented first — not silently added because the tooling allows it.
+- Changing the specialist roster (`.claude/agents/*.md`) is a process
+  change and should be surfaced to the project owner, though it does not
+  require the same stop-and-ask as the destructive/architectural items
+  above.
+
 ## Business Logic Freeze
 
 Robot allocation business functionality must not be implemented until the

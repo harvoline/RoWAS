@@ -119,6 +119,7 @@ TDD cycle this project follows. In short:
 | [`testing-workflow.md`](testing-workflow.md) | TDD cycle and test categorisation strategy |
 | [`rules.md`](rules.md) | Non-negotiable project and safety rules |
 | [`documentation-workflow.md`](documentation-workflow.md) | When/how documentation must be updated |
+| [`orchestrator-workflow.md`](orchestrator-workflow.md) | Multi-agent delegation: Orchestrator role, specialist roster, coverage model, review levels |
 
 `user-setup.md` (gitignored, not in this table) may exist locally for
 machine-specific setup quirks — it's per-developer, not shared project
