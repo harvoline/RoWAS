@@ -25,6 +25,7 @@ Documentation should be:
 | Technical debt introduced or removed | `README.md` "Technical Debt" section |
 | Significant technical decision made | `solutions.md` |
 | Meaningful AI tool usage | `tools.md` |
+| Multi-agent workflow / specialist roster changes | `orchestrator-workflow.md`, `.claude/agents/*.md` |
 
 ## What Not to Document
 

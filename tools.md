@@ -129,3 +129,56 @@ template + CODEOWNERS. Implemented as specified — see `solutions.md` §4.
 are both unavailable for private repositories below the Pro tier — this
 wasn't previously known and materially changed what "proper team flow"
 could mean technically (process discipline now, technical gate later).
+
+---
+
+## 2026-09-06 — Establishing the Multi-Agent Orchestrator Workflow
+
+**Tool used:** Claude Code, operating per a detailed multi-agent process
+specification provided by the project owner (Orchestrator role, specialist
+roster, hierarchy, coverage model, risk-based review levels, output
+contract, synthesis/conflict-resolution process, approval boundaries).
+
+**Purpose:** Establish the multi-agent delegation workflow itself — no
+robot allocation functionality was in scope for this task, by explicit
+instruction.
+
+**What the tool did:**
+
+1. Rediscovered the DevSwarm/WSL git environment mismatch documented in
+   `solutions.md` §2 (this workspace's branch was still pinned to the
+   repository's pre-foundation commit) and fast-forwarded it to the current
+   `origin/main` via WSL, per the already-recorded fix — no `.git` internals
+   were touched, consistent with `rules.md` "Safety."
+2. Read the full existing documentation set before designing anything, to
+   avoid contradicting established conventions.
+3. Authored `orchestrator-workflow.md` defining the Orchestrator/specialist
+   boundary, coverage model, four risk-based review levels (calibrated
+   with this project's own examples), the agent output contract, synthesis
+   and conflict-resolution processes, and explicit reasoning for *not*
+   introducing an additional orchestration layer yet.
+4. Authored ten read-only specialist subagent definitions under
+   `.claude/agents/` (`business-agent`, `domain-agent`,
+   `architecture-agent`, `testing-agent`, `security-agent`,
+   `performance-agent`, `ux-agent`, `documentation-agent`, `devops-agent`,
+   `production-readiness-agent`), each scoped to the project owner's own
+   enumerated specialist roles, each following the same structured output
+   contract.
+5. Cross-linked the new file/directory from `documentation-workflow.md`,
+   `README.md`, `CLAUDE.md`, and `rules.md`, without duplicating content
+   that already lives in `rules.md` (approval boundaries) or `solutions.md`
+   (decision-record format).
+6. Logged the full reasoning in `solutions.md` §5, including the
+   alternatives considered and rejected (editable specialists, a separate
+   Implementation agent, a dedicated Devil's Advocate persona, an
+   additional orchestration layer).
+
+**Accepted / rejected / modified:** Pending project owner review — this is
+a process/documentation deliverable, no code was changed, and no commit was
+made without explicit instruction (per this session's operating rules).
+
+**Limitations / risks discovered:** none new beyond what's already recorded
+in `orchestrator-workflow.md` "Limitations and Risks of This Architecture"
+— notably that nothing technically enforces the Orchestrator actually
+running the coverage assessment before implementing (same category of gap
+as the already-accepted convention-only PR review).
