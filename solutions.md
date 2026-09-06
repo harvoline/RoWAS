@@ -81,7 +81,7 @@ affects every subsequent file), to do directly.
 ### Decision
 
 - Language: **Python >= 3.10** (owner decision).
-- Layout: **src-layout**, package name `robot_allocation`.
+- Layout: **src-layout**, package name `robot_allocation` (later renamed to `everbot` — see entry below).
 - Build backend: **setuptools**.
 - Dev tooling: **pytest + pytest-cov, ruff, mypy(strict)**.
 - CLI entry point exists (`cli.py`) but contains no business logic — only a
@@ -128,7 +128,7 @@ something real to run and test.
 
 A verified, minimal Python project skeleton: `pyproject.toml` (setuptools,
 src-layout, pytest/ruff/mypy config), `src/robot_allocation/{__init__.py,
-cli.py}`, `tests/test_cli.py`. Confirmed working end-to-end: `pytest` (1
+cli.py}` (since renamed to `src/everbot/`), `tests/test_cli.py`. Confirmed working end-to-end: `pytest` (1
 passed), `ruff check .` (all checks passed), `mypy src` (no issues, strict
 mode). Full documentation set written alongside it.
 
@@ -140,9 +140,7 @@ mode). Full documentation set written alongside it.
 - The CLI placeholder in `cli.py` must be replaced (not just extended) once
   real input/output requirements arrive — it is scaffolding, not a
   foundation to build features on top of untouched.
-- Package name `robot_allocation` was chosen for clarity; if the project
-  owner has a preferred naming convention (e.g. matching a future company
-  monorepo), this is cheap to rename now and expensive later.
+- Package name was later renamed from `robot_allocation` to `everbot` (owner decision; see Level 1 port entry).
 
 ---
 
@@ -667,3 +665,40 @@ implemented, per the explicit scope of this task.
 - Re-evaluate the "no additional orchestration layer" decision against the
   specific triggers documented in `orchestrator-workflow.md`, not on a
   fixed schedule.
+
+
+---
+
+## Level 1 everbot port (package rename + src-layout)
+
+### Problem
+
+PR #3 (`TR02_LEVEL_1`) delivered Level 1 behaviour with a flat `everbot/` package
+at the repo root and a pytest-only `requirements.txt`, diverging from main's
+src-layout + `pyproject.toml` tooling (`pip install -e ".[dev]"` with pytest,
+ruff, mypy strict).
+
+### Decision
+
+- Keep main's packaging: **src-layout** under `src/everbot/`, `pyproject.toml`
+  entry point `everbot.cli:main`, mypy/ruff pointed at `src`.
+- Port Level 1 modules, tests, and domain docs (`robots.md`, `features/level-1.md`)
+  from `origin/TR02_LEVEL_1`.
+- Retain the strategy pattern (Allocator + AllocationStrategy +
+  CategoryDistributionStrategy).
+- Remove the scaffolding package `src/robot_allocation/` after migration —
+  single package tree only.
+- Open a **new** PR off main; do not close PR #3 (this supersedes its packaging
+  approach while preserving Level 1 behaviour).
+
+### Reasoning
+
+Owner decided the product package name is `everbot`, and main's tooling is the
+canonical foundation. Merging PR #3 as-is would regress packaging; re-porting
+onto main preserves both the Level 1 algorithm/tests and the engineering
+scaffold.
+
+### Result
+
+`src/everbot/` with Level 1 allocation, updated README/CLAUDE/solutions, domain
+docs from PR #3, and a green pytest/ruff/mypy suite under `pip install -e ".[dev]"`.

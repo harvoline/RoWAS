@@ -1,0 +1,42 @@
+# EverBot Solutions — Robot Reference
+
+> **Version:** 1.1.0 | **Last updated:** 2026-09-06
+> Single source of truth for shared robot rules. Update the changelog on every change.
+> Per-level strategies live in `features/`.
+
+## Overview
+EverBot Solutions assigns specialized robots (Bravo/Charlie/Delta) to fulfil client work
+requests, measured in total hours, as efficiently as possible. Each level uses a different
+allocation strategy.
+
+## Robot Types
+| Type    | Working hours / day | Charging cost / day |
+|---------|--------------------:|--------------------:|
+| Bravo   | 3 h                 | $2                  |
+| Charlie | 5 h                 | $3                  |
+| Delta   | 8 h                 | $4                  |
+
+## General Rules
+- Each robot works once per day for its max hours, then recharges.
+- A robot cannot be used more than once per day / per allocation.
+- Robot counts must be non-negative integers; client work hours must be positive integers.
+- Combined robot hours need not match exactly but must be **>= requested** (overshoot allowed,
+  undershoot not). E.g. request 16 -> 17 or 18 OK, 15 not.
+- If work cannot be fulfilled, show a clear error message.
+
+## Error Messages
+| Situation | Message |
+|-----------|---------|
+| Insufficient capacity | `Error: Insufficient robot capacity to complete the requested work.` |
+| Cannot allocate one per category | `Error: Unable to allocate at least one robot from each category with the available inventory.` |
+| Zero robots available | `Error: No robots available for assignment.` |
+| Invalid work hours | `Error: Work hours must be a positive integer.` |
+
+## Levels
+- **Level 1 — Robot Category Distribution:** see `features/level-1.md`.
+
+## Changelog
+| Version | Date | Change |
+|---------|------|--------|
+| 1.0.0 | 2026-09-06 | Initial robot rules captured. |
+| 1.1.0 | 2026-09-06 | Linked Level 1 spec; moved per-level detail to `features/`. |

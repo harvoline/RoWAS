@@ -13,16 +13,14 @@ business rules. The application reads input from the terminal, applies
 allocation rules, and produces output. There is no GUI and no persistent
 server component.
 
-**Current state:** foundation only. No allocation business logic has been
-implemented. Requirements will be provided progressively by the project owner.
+**Current state:** Level 1 (Robot Category Distribution) is implemented under
+`src/everbot/`. Further levels will be added progressively by the project owner.
 
 ## Domain Context
 
-The business domain (robot allocation rules, constraints, priorities, robot
-capabilities, work-item modelling, etc.) has **not yet been specified**. Do
-not invent domain rules ahead of requirements — this repository intentionally
-contains no assumptions about what "allocation" means beyond "assign work to
-robots."
+Shared robot rules: [`robots.md`](robots.md). Per-level strategies:
+[`features/`](features/) (currently Level 1 — category distribution).
+Do not invent new domain rules ahead of requirements.
 
 ## Technology Stack
 
@@ -30,7 +28,7 @@ robots."
   TypeScript/Python/Java/C# during foundation setup; verified available
   version in the dev environment is 3.10.12).
 - **Packaging:** `pyproject.toml`, setuptools backend, **src-layout**
-  (`src/robot_allocation/`).
+  (`src/everbot/`).
 - **Testing:** pytest + pytest-cov.
 - **Linting/formatting:** ruff.
 - **Type checking:** mypy, `strict = true`.
@@ -55,17 +53,22 @@ challenge them if requirements change.
 ## Architecture Overview
 
 ```
-src/robot_allocation/
-    __init__.py
-    cli.py          # entry point ONLY — no business logic
-tests/
-    test_cli.py     # mirrors src/ structure
+src/everbot/
+    __init__.py / __main__.py
+    robots.py       # Robot ABC + Bravo/Charlie/Delta
+    errors.py       # EverBotError hierarchy
+    allocation.py   # Allocation value object
+    allocator.py    # shared validation + strategy delegation
+    strategies/     # AllocationStrategy + CategoryDistributionStrategy
+    cli.py          # interactive CLI (I/O only)
+features/level-1.md
+robots.md
+tests/              # allocation, CLI, design/structure tests
 ```
 
-**Principle (not yet exercised, but binding once business logic exists):**
-CLI/input-output concerns must stay separate from domain/business logic.
-Domain logic must be testable without going through the terminal interface.
-Validation is a separate concern from processing.
+**Principle:** CLI/input-output concerns stay separate from domain/business
+logic. Domain logic is testable without the terminal. Validation is separate
+from processing. New levels add an `AllocationStrategy` subclass (Open/Closed).
 
 ## Important Conventions
 
@@ -152,6 +155,8 @@ and commits.
 |---|---|---|
 | Python >= 3.10 | Chosen by project owner from a language shortlist | **Confirmed** |
 | src-layout package structure | Standard practice, avoids import footguns | Confirmed |
+| Package name `everbot` (was `robot_allocation`) | Match product name; single package tree under `src/everbot/` | **Confirmed** |
+| Level 1 strategy pattern (Allocator + AllocationStrategy) | Open/Closed for future levels; shared validation in Allocator | **Confirmed** |
 | pytest + ruff + mypy(strict) | Minimal, standard, covers testing/lint/types | Confirmed |
 | setuptools build backend | Ubiquitous, avoids extra tooling dependency | Confirmed |
 | Repository hosting / PR platform | GitHub: `harvoline/RoWAS` | **Confirmed** |
@@ -160,9 +165,8 @@ and commits.
 
 ## Things an AI/Developer Must Know Before Modifying This Project
 
-1. **Do not implement robot allocation business logic** until explicitly
-   instructed — this was an explicit constraint from the project owner during
-   foundation setup, and may still apply until lifted.
+1. **Do not invent new allocation levels or domain rules** until explicitly
+   instructed. Level 1 is implemented; further levels need owner requirements.
 2. Check for a local, gitignored `user-setup.md` before assuming a standard
    command (e.g. `git`) will behave exactly as documented — some
    sandboxed/managed environments need a different invocation. Never add
