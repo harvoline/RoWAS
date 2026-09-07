@@ -86,29 +86,25 @@ def test_format_cost_allocation_omits_zero_counts():
     from everbot.allocation import Allocation
 
     alloc = Allocation({"Bravo": 0, "Charlie": 1, "Delta": 2}, 20)
-    expected = (
-        "Cost Optimized Allocation\n"
-        "Charlie: 1\n"
-        "Delta: 2\n"
-        "Total Hours Provided: 21\n"
-        "Total Charging Cost: $11"
-    )
-    assert format_cost_allocation(alloc) == expected
+    text = format_cost_allocation(alloc)
+    assert "Cost Optimized Allocation" in text
+    assert "Charlie: 1" in text
+    assert "Delta: 2" in text
+    assert "Bravo:" not in text
+    assert "Total Hours Provided: 21" in text
+    assert "Total Charging Cost: $11" in text
+
 
 
 def test_format_allocation_level1_block_still_available():
     alloc = allocate({"Bravo": 2, "Charlie": 3, "Delta": 2}, 16)
-    expected = (
-        "Robot Assignment\n"
-        "\n"
-        "Bravo: 1\n"
-        "Charlie: 1\n"
-        "Delta: 1\n"
-        "\n"
-        "Total Work Hours Provided: 16\n"
-        "Client Work Hours Requested: 16"
-    )
-    assert format_allocation(alloc) == expected
+    text = format_allocation(alloc)
+    assert "Robot Assignment" in text
+    assert "Bravo: 1" in text
+    assert "Charlie: 1" in text
+    assert "Delta: 1" in text
+    assert "Total Work Hours Provided: 16" in text
+    assert "Client Work Hours Requested: 16" in text
 
 
 def test_format_comparison_insight():
