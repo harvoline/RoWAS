@@ -735,3 +735,38 @@ and is trivial at realistic inventory sizes.
 ### Result
 
 Level 2 examples + comparison tests pass; existing Level 1 tests remain green.
+
+## Level 3 — Standby Robot Activation + top-level menu
+
+### Problem
+
+Level 3 must recommend additional standby robots when active capacity cannot cover
+requested hours, without a standby inventory prompt, while keeping Level 1 and
+Level 2 behaviours available and uncollided behind a menu.
+
+### Decision
+
+- New workflow module ``standby.plan_standby`` / ``StandbyPlan`` (not an
+  ``AllocationStrategy``) — Level 3 is capacity + optional shortfall fill, not a
+  replacement inventory allocator.
+- Shortfall fill reuses Level 2's lexicographic objective via
+  ``CostOptimisedStrategy`` with unbounded caps (enough robots to cover shortfall
+  + margin).
+- Full active capacity is always applied first; additional section omitted when
+  ``active_capacity >= requested``.
+- CLI menu dispatches to ``run_level_1`` / ``run_level_2`` / ``run_level_3``.
+- Additional lines coloured by robot type (Bravo blue, Charlie magenta, Delta
+  yellow); colour off by default for tests, on for TTY in ``main``.
+
+### Reasoning
+
+Keeping ``AllocationStrategy`` for L1/L2 preserves Open/Closed for inventory-based
+allocation. Standby activation is a different workflow (active capacity first,
+unbounded recommend-to-buy), so a dedicated module avoids bending the strategy
+interface. Separate runners prevent L1/L2/L3 output and validation paths from
+colliding.
+
+### Result
+
+Owner example (1/1/1 active, 21h -> Charlie:1 @ $3) and no-additional-when-covered
+cases pass; existing Level 1/2 tests remain green via their runners / menu paths.
