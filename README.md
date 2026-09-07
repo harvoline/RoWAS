@@ -4,32 +4,37 @@ A terminal-based system for allocating work to robots, built for EverBot Solutio
 
 ## Status
 
-**Foundation stage.** No robot allocation business logic has been implemented yet.
-This repository currently contains only the engineering scaffolding: project
-structure, packaging, linting/type-checking configuration, test infrastructure,
-and process documentation. Business functionality will be added incrementally,
-one reviewed feature branch at a time.
+**Level 1 implemented.** The CLI allocates Bravo/Charlie/Delta robots using the
+Robot Category Distribution strategy. Foundation engineering scaffolding
+(packaging, linting/type-checking, test infrastructure, process docs) remains
+in place; further levels will land as reviewed feature branches.
 
 ## Business Problem
 
-EverBot Solutions needs a way to allocate work to robots based on business rules
-that will be specified progressively. The system is a terminal (CLI) application:
-it reads input, applies allocation rules, and produces output — no GUI, no
-persistent server.
+EverBot Solutions assigns specialized robots to fulfil client work requests
+(measured in hours) as efficiently as possible. Each level uses a different
+allocation strategy. Shared robot rules live in [`robots.md`](robots.md);
+per-level specs live under [`features/`](features/).
 
 ## Architecture (current)
 
 ```
-src/robot_allocation/   Application package (src-layout)
-  __init__.py
-  cli.py                Entry point only — no business logic yet
-tests/                   pytest test suite, mirrors src/ package structure
+src/everbot/                 Application package (src-layout)
+  __init__.py                Public API re-exports
+  __main__.py                python -m everbot entry
+  robots.py                  Robot ABC + Bravo/Charlie/Delta
+  errors.py                  EverBotError hierarchy + exact messages
+  allocation.py              Allocation result value object
+  allocator.py               Shared validation + strategy delegation
+  strategies/                AllocationStrategy + CategoryDistributionStrategy
+  cli.py                     Interactive CLI
+features/                    Per-level specifications (level-1.md)
+robots.md                    Shared robot reference
+tests/                       pytest suite mirroring the package
 ```
 
-As business logic is introduced, domain rules will live in their own modules,
-separate from CLI/input-output concerns (see [`CLAUDE.md`](CLAUDE.md) and
-[`coding-workflow.md`](coding-workflow.md) for the architectural principles this
-project follows).
+Domain logic stays separate from CLI/I/O (see [`CLAUDE.md`](CLAUDE.md) and
+[`coding-workflow.md`](coding-workflow.md)).
 
 ## Technology Stack
 
@@ -40,11 +45,6 @@ project follows).
 | Testing           | pytest, pytest-cov              |
 | Linting/formatting| ruff                             |
 | Type checking     | mypy (`strict = true`)          |
-
-**Decision record:** the language was chosen by the project owner from a
-shortlist (TypeScript, Python, Java, C#) presented during foundation setup;
-Python was selected. See [`solutions.md`](solutions.md) for the reasoning
-behind the supporting tool choices (ruff, mypy, pytest, src-layout).
 
 ## Repository
 
@@ -64,22 +64,44 @@ pip install -e ".[dev]"
 ```
 
 > **Environment note:** if a standard command in this guide doesn't behave as
-> documented on your machine (e.g. a sandboxed or managed dev environment
-> that routes git or Python differently), that's a local quirk, not a
-> project issue. Create a `user-setup.md` file at the repo root (gitignored,
-> never shared) documenting the workaround for your machine — see
+> documented on your machine, create a local gitignored `user-setup.md` — see
 > [`documentation-workflow.md`](documentation-workflow.md).
 
 ## Running the CLI
 
 ```bash
 everbot-allocate
-# or, without installing the console script:
-python -m robot_allocation.cli
+# or:
+python -m everbot
 ```
 
-Currently this only prints a placeholder banner — there is no allocation
-functionality yet.
+Example session (see [`features/level-1.md`](features/level-1.md)):
+
+```
+Enter number of robots available:
+Bravo: 2
+Charlie: 3
+Delta: 2
+
+Enter client work hours:
+16
+
+Robot Assignment
+
+Bravo: 1
+Charlie: 1
+Delta: 1
+
+Total Work Hours Provided: 16
+Client Work Hours Requested: 16
+```
+
+## Level 1 — Robot Category Distribution
+
+Assign robots so that (in priority order): every category is represented
+(>=1 Bravo, Charlie, Delta), total hours >= requested with the **least excess**,
+and ties are broken by the **fewest robots**. See
+[`features/level-1.md`](features/level-1.md).
 
 ## Running Tests
 
@@ -90,62 +112,41 @@ ruff check .        # lint
 mypy src            # type-check
 ```
 
-All three checks currently pass against the scaffolding (1 smoke test, no
-lint/type errors).
-
 ## Development Workflow
 
-See [`coding-workflow.md`](coding-workflow.md) for the full Git branching and
-commit discipline, and [`testing-workflow.md`](testing-workflow.md) for the
-TDD cycle this project follows. In short:
+See [`coding-workflow.md`](coding-workflow.md) and
+[`testing-workflow.md`](testing-workflow.md). In short:
 
 1. One feature/fix per branch, branched from `main`.
 2. Write a failing test before writing implementation code.
 3. Small, coherent commits with messages that explain *why*.
-4. Pull request review before merging into `main` — see
-   `coding-workflow.md` "Pull Requests" for how reviews/approvals/requested
-   changes work in this repo today (convention-enforced, not yet a
-   technical gate — see Known Limitations below).
+4. Pull request review before merging into `main`.
 
 ## Documentation Map
 
 | File | Purpose |
 |---|---|
 | [`CLAUDE.md`](CLAUDE.md) | Living project context for AI/developer onboarding |
+| [`robots.md`](robots.md) | Shared robot rules (single source of truth) |
+| [`features/level-1.md`](features/level-1.md) | Level 1 category-distribution spec |
 | [`tools.md`](tools.md) | Log of AI tool usage and outcomes |
 | [`solutions.md`](solutions.md) | Engineering reasoning behind significant decisions |
-| [`app-workflow.md`](app-workflow.md) | Functional/business workflow (populated as features land) |
+| [`app-workflow.md`](app-workflow.md) | Functional/business workflow |
 | [`coding-workflow.md`](coding-workflow.md) | Git branching, commit, and PR discipline |
 | [`testing-workflow.md`](testing-workflow.md) | TDD cycle and test categorisation strategy |
 | [`rules.md`](rules.md) | Non-negotiable project and safety rules |
 | [`documentation-workflow.md`](documentation-workflow.md) | When/how documentation must be updated |
-| [`orchestrator-workflow.md`](orchestrator-workflow.md) | Multi-agent delegation: Orchestrator role, specialist roster, coverage model, review levels |
-
-`user-setup.md` (gitignored, not in this table) may exist locally for
-machine-specific setup quirks — it's per-developer, not shared project
-documentation.
+| [`orchestrator-workflow.md`](orchestrator-workflow.md) | Multi-agent delegation workflow |
 
 ## Known Limitations / Open Decisions
 
-- **No business logic yet.** This is intentional — see project instructions.
+- **Higher levels not yet implemented.** Level 1 only; Levels 2+ will add new
+  `AllocationStrategy` subclasses without changing existing code.
 - **Repository hosting: decided.** GitHub, at
-  [harvoline/RoWAS](https://github.com/harvoline/RoWAS) (`origin`). PRs are
-  reviewed there.
-- **CI/CD: explicitly deferred.** At the first-PR checkpoint (2026-09-05),
-  the project owner chose to defer CI/CD entirely for now rather than add a
-  GitHub Actions workflow. No CI config exists in this repo. The previously
-  discussed 3-hour scheduled build was considered and declined in favour of
-  event-driven checks — but even that was deferred, not adopted, pending
-  more code to justify it. See `solutions.md` for the full reasoning; revisit
-  when it's worth the setup cost.
-- **Dependency management is intentionally minimal**: only pytest, pytest-cov,
-  ruff, and mypy as dev dependencies. No runtime dependencies exist yet
-  because there is no functionality requiring them.
-- **PR review is convention-enforced, not technically gated.** RoWAS is a
-  private repo on GitHub's Free plan, which blocks branch protection and
-  rulesets; there is also currently only one collaborator. See `rules.md`
-  "Pull Request Review" — revisit if a second collaborator joins or the
-  plan is upgraded.
+  [harvoline/RoWAS](https://github.com/harvoline/RoWAS) (`origin`).
+- **CI/CD: explicitly deferred.** See `solutions.md`; revisit when justified.
+- **PR review is convention-enforced, not technically gated.** Private repo on
+  GitHub Free; see `rules.md` "Pull Request Review".
 
 ## Technical Debt
 
