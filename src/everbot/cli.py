@@ -1,8 +1,7 @@
 """Interactive command-line interface for the EverBot allocation system.
 
-Input/output format matches ``features/level-1.md`` and ``features/level-2.md``.
-The core functions take injectable ``input_fn`` / ``output_fn`` so the flow is
-easy to unit-test. Colour is optional (on for real terminals, off in tests).
+Top-level menu selects Level 1, 2, or 3; each level has a separate runner so
+logics do not collide. Colour is optional (on for real terminals, off in tests).
 """
 
 from __future__ import annotations
@@ -11,9 +10,12 @@ import sys
 from collections.abc import Callable
 
 from everbot.allocation import Allocation
+from everbot.allocator import Allocator
 from everbot.comparison import CostComparison, compare_levels
 from everbot.errors import EverBotError, InvalidRobotCountError, InvalidWorkHoursError
 from everbot.robots import ROBOT_TYPES
+from everbot.standby import StandbyPlan, plan_standby
+from everbot.strategies.category_distribution import CategoryDistributionStrategy
 
 _RESET = "\033[0m"
 _BOLD = "\033[1m"
@@ -22,6 +24,15 @@ _CYAN = "\033[36m"
 _GREEN = "\033[32m"
 _YELLOW = "\033[33m"
 _RED = "\033[31m"
+_BLUE = "\033[34m"
+_MAGENTA = "\033[35m"
+
+# Distinct colours per robot type (Level 3 additional lines).
+_ROBOT_COLOURS: dict[str, str] = {
+    "Bravo": _BLUE,
+    "Charlie": _MAGENTA,
+    "Delta": _YELLOW,
+}
 
 
 def _c(text: str, *codes: str, color: bool) -> str:
@@ -152,17 +163,78 @@ def format_comparison(comparison: CostComparison, *, color: bool = False) -> str
     return "\n".join(lines)
 
 
-def run(
+def format_standby_plan(plan: StandbyPlan, *, color: bool = False) -> str:
+    """Render Level 3 capacity + optional winning additional standby block."""
+    lines = _heading("Standby Robot Activation", color=color)
+    lines.append("")
+    lines.append(f"  Active Robot Capacity: {plan.active_capacity} hours")
+    lines.append(f"  Client Work Requested: {plan.requested_hours} hours")
+    if plan.additional is None:
+        return "\n".join(lines)
+
+    lines.append("")
+    lines.append(_c("  Additional Standby Robots Required:", _BOLD, color=color))
+    for rt in ROBOT_TYPES:
+        count = plan.additional.count_of(rt.name)
+        if count <= 0:
+            continue
+        line_cost = count * rt.cost
+        line = f"  {rt.name}: {count} - cost ${line_cost}"
+        robot_colour = _ROBOT_COLOURS.get(rt.name, "")
+        if robot_colour:
+            lines.append(_c(line, robot_colour, color=color))
+        else:
+            lines.append(line)
+    return "\n".join(lines)
+
+
+def read_level_choice(
+    input_fn: Callable[[str], str],
+    output_fn: Callable[[str], None],
+    *,
+    color: bool = False,
+) -> int:
+    """Prompt for Level 1, 2, or 3. Returns the chosen level number."""
+    output_fn(_c("Select allocation level:", _BOLD, color=color))
+    output_fn("  1. Level 1 — Robot Category Distribution")
+    output_fn("  2. Level 2 — Cost Optimised Allocation")
+    output_fn("  3. Level 3 — Standby Robot Activation")
+    output_fn("")
+    raw = input_fn("Choice (1/2/3): ").strip()
+    if raw not in {"1", "2", "3"}:
+        raise EverBotError("Error: Please choose level 1, 2, or 3.")
+    return int(raw)
+
+
+def run_level_1(
     input_fn: Callable[[str], str] = input,
     output_fn: Callable[[str], None] = print,
     *,
     color: bool = False,
 ) -> int:
-    """Run one interactive allocation showing Level 2 and L1/L2 comparison.
+    """Run Level 1 category-distribution assignment."""
+    try:
+        inventory = read_inventory(input_fn, output_fn, color=color)
+        hours = read_hours(input_fn, output_fn, color=color)
+        allocation = Allocator(CategoryDistributionStrategy()).allocate(inventory, hours)
+    except EverBotError as err:
+        output_fn("")
+        output_fn(_c(str(err), _BOLD, _RED, color=color))
+        return 1
 
-    Returns a process exit code (0 ok, 1 error).
-    Colour defaults off so unit tests see plain text; ``main`` enables it on TTYs.
-    """
+    output_fn("")
+    output_fn(format_allocation(allocation, color=color))
+    output_fn("")
+    return 0
+
+
+def run_level_2(
+    input_fn: Callable[[str], str] = input,
+    output_fn: Callable[[str], None] = print,
+    *,
+    color: bool = False,
+) -> int:
+    """Run Level 2 cost allocation and L1/L2 comparison."""
     try:
         inventory = read_inventory(input_fn, output_fn, color=color)
         hours = read_hours(input_fn, output_fn, color=color)
@@ -178,6 +250,54 @@ def run(
     output_fn(format_comparison(comparison, color=color))
     output_fn("")
     return 0
+
+
+def run_level_3(
+    input_fn: Callable[[str], str] = input,
+    output_fn: Callable[[str], None] = print,
+    *,
+    color: bool = False,
+) -> int:
+    """Run Level 3 standby activation (active capacity + optional additional)."""
+    try:
+        inventory = read_inventory(input_fn, output_fn, color=color)
+        hours = read_hours(input_fn, output_fn, color=color)
+        plan = plan_standby(inventory, hours)
+    except EverBotError as err:
+        output_fn("")
+        output_fn(_c(str(err), _BOLD, _RED, color=color))
+        return 1
+
+    output_fn("")
+    output_fn(format_standby_plan(plan, color=color))
+    output_fn("")
+    return 0
+
+
+def run(
+    input_fn: Callable[[str], str] = input,
+    output_fn: Callable[[str], None] = print,
+    *,
+    color: bool = False,
+) -> int:
+    """Show the Level 1/2/3 menu, then dispatch to the chosen runner.
+
+    Returns a process exit code (0 ok, 1 error).
+    Colour defaults off so unit tests see plain text; ``main`` enables it on TTYs.
+    """
+    try:
+        level = read_level_choice(input_fn, output_fn, color=color)
+    except EverBotError as err:
+        output_fn("")
+        output_fn(_c(str(err), _BOLD, _RED, color=color))
+        return 1
+
+    output_fn("")
+    if level == 1:
+        return run_level_1(input_fn, output_fn, color=color)
+    if level == 2:
+        return run_level_2(input_fn, output_fn, color=color)
+    return run_level_3(input_fn, output_fn, color=color)
 
 
 def main() -> int:
