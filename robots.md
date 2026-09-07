@@ -1,6 +1,6 @@
 # EverBot Solutions — Robot Reference
 
-> **Version:** 1.1.0 | **Last updated:** 2026-09-06
+> **Version:** 1.2.0 | **Last updated:** 2026-09-07
 > Single source of truth for shared robot rules. Update the changelog on every change.
 > Per-level strategies live in `features/`.
 
@@ -34,9 +34,11 @@ allocation strategy.
 
 ## Levels
 - **Level 1 — Robot Category Distribution:** see `features/level-1.md`.
+- **Level 2 — Cost Optimised Allocation:** see `features/level-2.md`.
 
 ## Changelog
 | Version | Date | Change |
 |---------|------|--------|
 | 1.0.0 | 2026-09-06 | Initial robot rules captured. |
 | 1.1.0 | 2026-09-06 | Linked Level 1 spec; moved per-level detail to `features/`. |
+| 1.2.0 | 2026-09-07 | Linked Level 2 cost-optimised spec. |
