@@ -4,8 +4,9 @@ A terminal-based system for allocating work to robots, built for EverBot Solutio
 
 ## Status
 
-**Level 1 implemented.** The CLI allocates Bravo/Charlie/Delta robots using the
-Robot Category Distribution strategy. Foundation engineering scaffolding
+**Levels 1–2 implemented.** The CLI allocates Bravo/Charlie/Delta robots using
+Level 2 Cost Optimised Allocation by default, and compares charging cost against
+Level 1 (Robot Category Distribution). Foundation engineering scaffolding
 (packaging, linting/type-checking, test infrastructure, process docs) remains
 in place; further levels will land as reviewed feature branches.
 
@@ -26,9 +27,11 @@ src/everbot/                 Application package (src-layout)
   errors.py                  EverBotError hierarchy + exact messages
   allocation.py              Allocation result value object
   allocator.py               Shared validation + strategy delegation
-  strategies/                AllocationStrategy + CategoryDistributionStrategy
-  cli.py                     Interactive CLI
-features/                    Per-level specifications (level-1.md)
+  strategies/                AllocationStrategy + CategoryDistribution +
+                             CostOptimised strategies
+  comparison.py              Level 1 vs Level 2 cost comparison
+  cli.py                     Interactive CLI (Level 2 + comparison)
+features/                    Per-level specifications (level-1.md, level-2.md)
 robots.md                    Shared robot reference
 tests/                       pytest suite mirroring the package
 ```
@@ -75,7 +78,7 @@ everbot-allocate
 python -m everbot
 ```
 
-Example session (see [`features/level-1.md`](features/level-1.md)):
+Example session (see [`features/level-2.md`](features/level-2.md)):
 
 ```
 Enter number of robots available:
@@ -84,16 +87,20 @@ Charlie: 3
 Delta: 2
 
 Enter client work hours:
-16
+20
 
-Robot Assignment
-
-Bravo: 1
+Cost Optimized Allocation
 Charlie: 1
-Delta: 1
+Delta: 2
+Total Hours Provided: 21
+Total Charging Cost: $11
 
-Total Work Hours Provided: 16
-Client Work Hours Requested: 16
+Level 1 vs Level 2 Cost Comparison
+
+Level 1 Cost: $12
+Level 2 Cost: $11
+Cost Difference: $1
+Insight: Level 1 strategy resulted in $1 additional cost due to mandatory usage of multiple robot categories
 ```
 
 ## Level 1 — Robot Category Distribution
@@ -102,6 +109,12 @@ Assign robots so that (in priority order): every category is represented
 (>=1 Bravo, Charlie, Delta), total hours >= requested with the **least excess**,
 and ties are broken by the **fewest robots**. See
 [`features/level-1.md`](features/level-1.md).
+
+## Level 2 — Cost Optimised Allocation
+
+Minimise total charging cost (no mandatory diversity). Tie-breaks: min excess,
+then fewest robots, then deterministic Delta/Charlie preference. The CLI also
+compares Level 1 vs Level 2 cost. See [`features/level-2.md`](features/level-2.md).
 
 ## Running Tests
 
@@ -129,6 +142,7 @@ See [`coding-workflow.md`](coding-workflow.md) and
 | [`CLAUDE.md`](CLAUDE.md) | Living project context for AI/developer onboarding |
 | [`robots.md`](robots.md) | Shared robot rules (single source of truth) |
 | [`features/level-1.md`](features/level-1.md) | Level 1 category-distribution spec |
+| [`features/level-2.md`](features/level-2.md) | Level 2 cost-optimised allocation + comparison |
 | [`tools.md`](tools.md) | Log of AI tool usage and outcomes |
 | [`solutions.md`](solutions.md) | Engineering reasoning behind significant decisions |
 | [`app-workflow.md`](app-workflow.md) | Functional/business workflow |
@@ -140,8 +154,8 @@ See [`coding-workflow.md`](coding-workflow.md) and
 
 ## Known Limitations / Open Decisions
 
-- **Higher levels not yet implemented.** Level 1 only; Levels 2+ will add new
-  `AllocationStrategy` subclasses without changing existing code.
+- **Higher levels beyond 2 not yet implemented.** Levels 1–2 land via strategy
+  subclasses; Levels 3+ will add further strategies without changing Level 1/2.
 - **Repository hosting: decided.** GitHub, at
   [harvoline/RoWAS](https://github.com/harvoline/RoWAS) (`origin`).
 - **CI/CD: explicitly deferred.** See `solutions.md`; revisit when justified.

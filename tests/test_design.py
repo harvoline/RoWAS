@@ -6,6 +6,7 @@ from everbot.allocation import Allocation
 from everbot.robots import ROBOT_TYPES, Bravo, Charlie, Delta, Robot
 from everbot.strategies.base import AllocationStrategy
 from everbot.strategies.category_distribution import CategoryDistributionStrategy
+from everbot.strategies.cost_optimised import CostOptimisedStrategy
 
 
 def test_robot_base_class_is_abstract():
@@ -39,8 +40,21 @@ def test_category_distribution_is_an_allocation_strategy():
     assert strategy.name  # has a human-readable name
 
 
+def test_cost_optimised_is_an_allocation_strategy():
+    strategy = CostOptimisedStrategy()
+    assert isinstance(strategy, AllocationStrategy)
+    assert strategy.name == "Cost Optimised Allocation"
+
+
 def test_strategy_returns_allocation():
-    alloc = CategoryDistributionStrategy().allocate({"Bravo": 2, "Charlie": 2, "Delta": 2}, 16)
+    alloc = CategoryDistributionStrategy().allocate(
+        {"Bravo": 2, "Charlie": 2, "Delta": 2}, 16
+    )
+    assert isinstance(alloc, Allocation)
+
+
+def test_cost_optimised_returns_allocation():
+    alloc = CostOptimisedStrategy().allocate({"Bravo": 2, "Charlie": 3, "Delta": 2}, 20)
     assert isinstance(alloc, Allocation)
 
 

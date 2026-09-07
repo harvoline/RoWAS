@@ -2,38 +2,50 @@
 
 ## Current State
 
-No business functionality has been implemented yet. There is no user
-interaction flow, validation flow, allocation flow, or output flow to
-document — inventing one now would mean guessing at business rules that
-have not been specified, which this project explicitly avoids.
-
-The CLI entry point (`src/robot_allocation/cli.py`) currently only prints a
-placeholder banner and exits successfully:
+Levels 1–2 are implemented. The interactive CLI collects inventory and requested
+hours, runs Level 2 (cost-optimised) allocation, and compares charging cost
+against Level 1 (category distribution).
 
 ```mermaid
 flowchart TD
-    A[Run CLI] --> B[Print placeholder banner]
-    B --> C[Exit 0]
+    A[Run CLI] --> B[Read inventory Bravo/Charlie/Delta]
+    B --> C[Read client work hours]
+    C --> D{Shared validation}
+    D -->|invalid / no robots / insufficient for L2| E[Print error and exit 1]
+    D -->|ok| F[Level 2 CostOptimisedStrategy]
+    F --> G[Best-effort Level 1 CategoryDistributionStrategy]
+    G --> H[Print Cost Optimized Allocation]
+    H --> I{Level 1 feasible?}
+    I -->|yes| J[Print L1 vs L2 cost comparison + insight]
+    I -->|no| K[Print Level 1 infeasible + Level 2 cost]
+    J --> L[Exit 0]
+    K --> L
 ```
 
-## What This Document Will Contain
+## Input flow
 
-Once the first business requirement is provided, this document will be
-expanded to cover, at minimum:
+1. Prompt `Enter number of robots available:` then `Bravo:`, `Charlie:`, `Delta:`.
+2. Prompt `Enter client work hours:`.
+3. Counts must be non-negative integers; hours must be a positive integer.
 
-- User interaction / input flow (how input reaches the system — file,
-  stdin, arguments, interactive prompts — to be determined by the
-  requirement).
-- Validation flow (what is checked, and what happens when validation
-  fails).
-- Allocation/business logic flow (the actual rules — not yet defined).
-- Output flow (what is produced, and in what format).
-- Error flow (how failures are surfaced to the user).
-- Any state transitions relevant to the domain.
-- System boundaries (what this application is and is not responsible for).
+## Allocation flow
 
-Each of these will be backed by a Mermaid diagram where it clarifies branching
-or state, per the project's documentation conventions.
+- **Level 2 (primary):** minimise total charging cost; tie-breaks min excess,
+  fewest robots, deterministic Delta/Charlie preference. No diversity mandate.
+- **Level 1 (comparison):** mandatory >=1 of each category; min excess then
+  fewest robots. See `features/level-1.md`.
 
-**This file must be updated in the same change that introduces or modifies
-the corresponding behaviour** — see `documentation-workflow.md`.
+## Output flow
+
+1. Level 2 block (`Cost Optimized Allocation`, positive counts only, hours, cost).
+2. Comparison block (both costs + difference + insight), or Level 1 infeasible note.
+
+## Error flow
+
+Shared Allocator errors and Level 2 insufficient-capacity abort the run (exit 1).
+Level 1-only failures do **not** abort when Level 2 succeeded.
+
+## System boundaries
+
+- No persistence, no network I/O, no GUI.
+- Domain logic (`Allocator` / strategies) is separate from CLI I/O adapters.

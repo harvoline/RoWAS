@@ -13,13 +13,14 @@ business rules. The application reads input from the terminal, applies
 allocation rules, and produces output. There is no GUI and no persistent
 server component.
 
-**Current state:** Level 1 (Robot Category Distribution) is implemented under
-`src/everbot/`. Further levels will be added progressively by the project owner.
+**Current state:** Levels 1–2 are implemented under `src/everbot/` (category
+distribution + cost-optimised allocation with L1/L2 cost comparison). Further
+levels will be added progressively by the project owner.
 
 ## Domain Context
 
 Shared robot rules: [`robots.md`](robots.md). Per-level strategies:
-[`features/`](features/) (currently Level 1 — category distribution).
+[`features/`](features/) (Level 1 category distribution; Level 2 cost-optimised).
 Do not invent new domain rules ahead of requirements.
 
 ## Technology Stack
@@ -59,9 +60,10 @@ src/everbot/
     errors.py       # EverBotError hierarchy
     allocation.py   # Allocation value object
     allocator.py    # shared validation + strategy delegation
-    strategies/     # AllocationStrategy + CategoryDistributionStrategy
-    cli.py          # interactive CLI (I/O only)
-features/level-1.md
+    strategies/     # AllocationStrategy + CategoryDistribution + CostOptimised
+    comparison.py   # Level 1 vs Level 2 cost comparison
+    cli.py          # interactive CLI (Level 2 + comparison)
+features/level-1.md, features/level-2.md
 robots.md
 tests/              # allocation, CLI, design/structure tests
 ```
@@ -157,6 +159,7 @@ and commits.
 | src-layout package structure | Standard practice, avoids import footguns | Confirmed |
 | Package name `everbot` (was `robot_allocation`) | Match product name; single package tree under `src/everbot/` | **Confirmed** |
 | Level 1 strategy pattern (Allocator + AllocationStrategy) | Open/Closed for future levels; shared validation in Allocator | **Confirmed** |
+| Level 2 CostOptimisedStrategy + L1/L2 comparison | Min cost (then excess, fewest robots); CLI compares strategies | **Confirmed** |
 | pytest + ruff + mypy(strict) | Minimal, standard, covers testing/lint/types | Confirmed |
 | setuptools build backend | Ubiquitous, avoids extra tooling dependency | Confirmed |
 | Repository hosting / PR platform | GitHub: `harvoline/RoWAS` | **Confirmed** |
@@ -166,7 +169,7 @@ and commits.
 ## Things an AI/Developer Must Know Before Modifying This Project
 
 1. **Do not invent new allocation levels or domain rules** until explicitly
-   instructed. Level 1 is implemented; further levels need owner requirements.
+   instructed. Levels 1–2 are implemented; further levels need owner requirements.
 2. Check for a local, gitignored `user-setup.md` before assuming a standard
    command (e.g. `git`) will behave exactly as documented — some
    sandboxed/managed environments need a different invocation. Never add

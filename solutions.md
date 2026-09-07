@@ -702,3 +702,36 @@ scaffold.
 
 `src/everbot/` with Level 1 allocation, updated README/CLAUDE/solutions, domain
 docs from PR #3, and a green pytest/ruff/mypy suite under `pip install -e ".[dev]"`.
+
+---
+
+## Level 2 — Cost Optimised Allocation
+
+### Problem
+
+Level 2 must minimise charging cost without Level 1's mandatory diversity, expose
+an L1 vs L2 cost comparison in the CLI, and uniquely match the owner's worked
+examples (including Example 2 where 2 Bravo @ $4 beats 1 Delta @ $4).
+
+### Decision
+
+- New ``CostOptimisedStrategy`` registered as ``STRATEGY_BY_LEVEL[2]``.
+- Lexicographic objective: **min cost → min excess → fewest robots → prefer more
+  Delta then Charlie**. Excess before fewest-robots is required so Example 2
+  uniquely selects Bravo:2 (exact 6h) over Delta:1 (8h, same $4, fewer robots).
+- ``compare_levels()`` always runs Level 2; Level 1 is best-effort. If Level 1
+  raises (e.g. missing category), the CLI still shows Level 2 and reports Level 1
+  infeasible rather than failing the run.
+- CLI header wording keeps the owner's US spelling ("Cost Optimized Allocation");
+  the strategy class uses UK spelling consistent with existing "Minimise" docs
+  (``CostOptimisedStrategy``).
+
+### Reasoning
+
+Open/Closed: Level 1 ``CategoryDistributionStrategy`` is untouched. Shared
+validation stays in ``Allocator``. Bounded triple-loop search mirrors Level 1
+and is trivial at realistic inventory sizes.
+
+### Result
+
+Level 2 examples + comparison tests pass; existing Level 1 tests remain green.

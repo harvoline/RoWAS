@@ -9,11 +9,17 @@ committed directly to `main`.
 main
  ├── feature/<short-description>
  ├── fix/<short-description>
- └── chore/<short-description>       (tooling/docs-only changes)
+ ├── chore/<short-description>       (tooling/docs-only changes)
+ └── TR<nn>_<SHORT_NAME>             (accepted EverBot exercise convention)
 ```
 
 Examples: `feature/robot-allocation-core`, `fix/allocation-tie-break`,
-`chore/ci-setup`.
+`chore/ci-setup`, `TR02_LEVEL_1`, `TR03_LEVEL_2`.
+
+The `TR<nn>_…` form is an **accepted project convention** for sequenced
+exercise/level work (same rules as `feature/`: branch from `main`, one
+coherent change, merge via PR). Prefer `feature/` / `fix/` / `chore/` for
+non-exercise work; use `TR…` when continuing the numbered EverBot level track.
 
 ## Commits
 

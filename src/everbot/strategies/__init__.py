@@ -6,10 +6,12 @@ are named for their behavior, not their level number.
 
 from everbot.strategies.base import AllocationStrategy
 from everbot.strategies.category_distribution import CategoryDistributionStrategy
+from everbot.strategies.cost_optimised import CostOptimisedStrategy
 
 # Maps the exercise's level number to the strategy it uses.
 STRATEGY_BY_LEVEL = {
     1: CategoryDistributionStrategy,
+    2: CostOptimisedStrategy,
 }
 
 
@@ -24,6 +26,7 @@ def strategy_for_level(level: int) -> AllocationStrategy:
 __all__ = [
     "AllocationStrategy",
     "CategoryDistributionStrategy",
+    "CostOptimisedStrategy",
     "STRATEGY_BY_LEVEL",
     "strategy_for_level",
 ]
