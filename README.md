@@ -4,11 +4,10 @@ A terminal-based system for allocating work to robots, built for EverBot Solutio
 
 ## Status
 
-**Levels 1–2 implemented.** The CLI allocates Bravo/Charlie/Delta robots using
-Level 2 Cost Optimised Allocation by default, and compares charging cost against
-Level 1 (Robot Category Distribution). Foundation engineering scaffolding
-(packaging, linting/type-checking, test infrastructure, process docs) remains
-in place; further levels will land as reviewed feature branches.
+**Levels 1–3 implemented.** The CLI presents a Level 1/2/3 menu: Level 1 category
+distribution, Level 2 cost-optimised allocation with L1/L2 cost comparison, and
+Level 3 standby robot activation (active capacity first, optional additional
+standby). Foundation scaffolding remains; further levels land as reviewed branches.
 
 ## Business Problem
 
@@ -30,8 +29,9 @@ src/everbot/                 Application package (src-layout)
   strategies/                AllocationStrategy + CategoryDistribution +
                              CostOptimised strategies
   comparison.py              Level 1 vs Level 2 cost comparison
-  cli.py                     Interactive CLI (Level 2 + comparison)
-features/                    Per-level specifications (level-1.md, level-2.md)
+  standby.py                 Level 3 standby plan (capacity + shortfall fill)
+  cli.py                     Interactive CLI (Level 1/2/3 menu + runners)
+features/                    Per-level specs (level-1.md, level-2.md, level-3.md)
 robots.md                    Shared robot reference
 tests/                       pytest suite mirroring the package
 ```
@@ -78,7 +78,8 @@ everbot-allocate
 python -m everbot
 ```
 
-Example session (see [`features/level-2.md`](features/level-2.md)):
+The CLI first asks you to choose Level 1, 2, or 3. Example Level 2 session
+(see [`features/level-2.md`](features/level-2.md)); choose `2` at the menu:
 
 ```
 Enter number of robots available:
@@ -116,6 +117,13 @@ Minimise total charging cost (no mandatory diversity). Tie-breaks: min excess,
 then fewest robots, then deterministic Delta/Charlie preference. The CLI also
 compares Level 1 vs Level 2 cost. See [`features/level-2.md`](features/level-2.md).
 
+## Level 3 — Standby Robot Activation
+
+Uses full active capacity first. When requested hours exceed capacity,
+recommends the cost-optimised set of additional standby robots to activate/buy
+(no standby inventory prompt; unbounded search). Colours additional lines by
+robot type. See [`features/level-3.md`](features/level-3.md).
+
 ## Running Tests
 
 ```bash
@@ -143,6 +151,7 @@ See [`coding-workflow.md`](coding-workflow.md) and
 | [`robots.md`](robots.md) | Shared robot rules (single source of truth) |
 | [`features/level-1.md`](features/level-1.md) | Level 1 category-distribution spec |
 | [`features/level-2.md`](features/level-2.md) | Level 2 cost-optimised allocation + comparison |
+| [`features/level-3.md`](features/level-3.md) | Level 3 standby robot activation |
 | [`tools.md`](tools.md) | Log of AI tool usage and outcomes |
 | [`solutions.md`](solutions.md) | Engineering reasoning behind significant decisions |
 | [`app-workflow.md`](app-workflow.md) | Functional/business workflow |
@@ -154,8 +163,8 @@ See [`coding-workflow.md`](coding-workflow.md) and
 
 ## Known Limitations / Open Decisions
 
-- **Higher levels beyond 2 not yet implemented.** Levels 1–2 land via strategy
-  subclasses; Levels 3+ will add further strategies without changing Level 1/2.
+- **Higher levels beyond 3 not yet implemented.** Levels 1–2 use strategy
+  subclasses; Level 3 uses a standby workflow module + menu runners.
 - **Repository hosting: decided.** GitHub, at
   [harvoline/RoWAS](https://github.com/harvoline/RoWAS) (`origin`).
 - **CI/CD: explicitly deferred.** See `solutions.md`; revisit when justified.

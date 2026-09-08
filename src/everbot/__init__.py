@@ -12,6 +12,7 @@ from everbot.errors import (
     NoRobotsError,
 )
 from everbot.robots import ROBOT_TYPES, Bravo, Charlie, Delta, Robot
+from everbot.standby import StandbyPlan, plan_standby
 from everbot.strategies import (
     AllocationStrategy,
     CategoryDistributionStrategy,
@@ -28,6 +29,8 @@ __all__ = [
     "CostOptimisedStrategy",
     "CostComparison",
     "compare_levels",
+    "StandbyPlan",
+    "plan_standby",
     "strategy_for_level",
     "Robot",
     "Bravo",
