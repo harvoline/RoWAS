@@ -34,6 +34,9 @@ allocation strategy.
 
 ## Levels
 
+Optional menu option 5 adds reporting over Level 4 without changing robot rules:
+see [Optional Advanced Features](features/optional-advanced.md).
+
 All levels share the terminal exit behaviour in [Application Workflow](app-workflow.md):
 EOF exits 1 and Ctrl+C exits 130, with stderr messages and no traceback.
 - **Level 1 — Robot Category Distribution:** see `features/level-1.md`.

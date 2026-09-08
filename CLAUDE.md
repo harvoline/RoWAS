@@ -55,6 +55,12 @@ challenge them if requirements change.
 
 ## Architecture Overview
 
+Menu option 5, **Optional Advanced Features**, reuses Level 4 allocation and adds
+planned active/standby totals and utilization metrics. See
+`features/optional-advanced.md`. `advanced.py` owns exact proportional useful-hour
+attribution and summary models; the CLI only formats metrics. Zero denominators
+display N/A. This is an optional reporting workflow, not a new allocation strategy.
+
 ```
 src/everbot/
     __init__.py / __main__.py
@@ -66,10 +72,13 @@ src/everbot/
     comparison.py   # Level 1 vs Level 2 cost comparison
     standby.py      # Level 3 standby plan (active capacity + shortfall fill)
     multiclient.py  # Level 4 multi-client plan (shared pool, hours parsing)
+    advanced.py     # optional summary, active inventory usage, useful capacity estimates
     cli.py          # interactive CLI (Level 1/2/3/4 menu + runners)
 features/level-1.md ... features/level-4.md
+features/optional-advanced.md
 robots.md
 tests/              # allocation, cost, standby, multi-client, CLI, design tests
+                    # test_advanced.py: summary totals and utilization calculations
 ```
 
 **Principle:** CLI/input-output concerns stay separate from domain/business

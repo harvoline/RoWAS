@@ -58,6 +58,7 @@ Tests under `tests/` cover domain behaviour, CLI behaviour, and entry-point exit
 | `test_cost_optimised.py` | Level 2 cost objective and tie-breaks |
 | `test_standby.py` | Level 3 active capacity + unbounded shortfall fill |
 | `test_multiclient.py` | Level 4 hours parsing, priority order, shared-pool drawdown |
+| `test_advanced.py` | Active/standby totals, proportional useful hours, weighted utilization, zero denominators and invalid requests |
 | `test_cli.py` | Menu dispatch, all four runners, formatters, error paths, EOF/Ctrl+C at `main`, subprocess EOF exits |
 
 Level 4 case breakdown (the categorisation this document mandates):
@@ -84,3 +85,9 @@ process boundary. Pytest adds `src` to the import path, and module subprocess te
 use the current environment; neither proves an independently installed wheel.
 Remaining gaps: installed console-script smoke tests, build metadata validation,
 scale benchmarks, very-large-integer bounds, and independent optimality oracles.
+
+Advanced normal cases compare the plan to Level 4 and verify robot/cost totals.
+Edge cases cover mixed types, per-client weighting, zero active inventory,
+available-but-unused types, and standby-only usage. Invalid hours/counts reject
+the plan. CLI tests cover option 5, no summary on error, N/A output, and shared
+EOF/Ctrl+C handling. Existing Levels 1-4 retain their output paths.

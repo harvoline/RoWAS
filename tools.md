@@ -254,3 +254,11 @@ and build metadata compatibility remain open. No commit or push requested.
 **Verification:** Full suite passed (152 tests, 96% statement coverage); strict
 mypy passed on 14 source files. Subprocess coverage is not collected by the
 current coverage configuration, so entry-point execution is proved by assertions.
+
+## 2026-09-08 - Optional advanced features
+
+OpenCode implemented owner-approved option 5 on a local feature branch, reusing
+Level 4 and adding a domain summary for planned totals and both utilization
+measures. Tests preceded implementation. A read-only review found no defects
+and suggested mixed active/standby and same-type weighting tests, which were added.
+Owner requested local testing before any commit, push, or PR; none was performed.

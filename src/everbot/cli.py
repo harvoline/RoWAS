@@ -1,6 +1,6 @@
 """Interactive command-line interface for the EverBot allocation system.
 
-Top-level menu selects Level 1, 2, 3, or 4; each level has a separate runner so
+Top-level menu selects Levels 1-4 or optional advanced features; separate runners ensure
 logics do not collide. Colour is optional (on for real terminals, off in tests).
 """
 
@@ -9,6 +9,7 @@ from __future__ import annotations
 import sys
 from collections.abc import Callable
 
+from everbot.advanced import AdvancedPlan, plan_advanced
 from everbot.allocation import Allocation
 from everbot.allocator import Allocator
 from everbot.comparison import CostComparison, compare_levels
@@ -247,22 +248,50 @@ def format_multi_client_plan(plan: MultiClientPlan, *, color: bool = False) -> s
     return "\n".join(lines)
 
 
+def format_advanced_summary(summary: AdvancedPlan, *, color: bool = False) -> str:
+    """Render planned totals and two distinct utilization measures."""
+    lines = _heading("Allocation Summary", color=color)
+    lines.extend([
+        "  Planned totals include recommended standby robots.",
+        f"  Total Robots Used: {summary.total_robots} "
+        f"(active {summary.active.total_robots}, standby {summary.standby.total_robots})",
+        f"  Total Charging Cost: ${summary.total_cost} "
+        f"(active ${summary.active.total_cost}, standby ${summary.standby.total_cost})",
+        f"  Requested Hours: {summary.plan.total_requested_hours}",
+        f"  Assigned Capacity: {summary.provided_hours} hours",
+        f"  Avg Robot Utilization: {float(summary.utilization):.2f}%",
+        "", "  Efficiency Metrics", "  Useful work is estimated proportionally per client.",
+    ])
+    for metric in summary.metrics:
+        usage = metric.inventory_usage
+        utilization = metric.capacity_utilization
+        usage_text = "N/A" if usage is None else f"{float(usage):.2f}%"
+        capacity_text = "N/A" if utilization is None else f"{float(utilization):.2f}%"
+        lines.append(
+            f"  {metric.name} Active Inventory Usage: "
+            f"{metric.active_used}/{metric.available} ({usage_text})"
+        )
+        lines.append(f"  {metric.name} Estimated Useful Working Capacity: {capacity_text}")
+    return "\n".join(lines)
+
+
 def read_level_choice(
     input_fn: Callable[[str], str],
     output_fn: Callable[[str], None],
     *,
     color: bool = False,
 ) -> int:
-    """Prompt for Level 1, 2, 3, or 4. Returns the chosen level number."""
+    """Prompt for Levels 1-4 or optional advanced features (option 5)."""
     output_fn(_c("Select allocation level:", _BOLD, color=color))
     output_fn("  1. Level 1 — Robot Category Distribution")
     output_fn("  2. Level 2 — Cost Optimised Allocation")
     output_fn("  3. Level 3 — Standby Robot Activation")
     output_fn("  4. Level 4 — Multi-Client Allocation")
+    output_fn("  5. Optional Advanced Features")
     output_fn("")
-    raw = input_fn("Choice (1/2/3/4): ").strip()
-    if raw not in {"1", "2", "3", "4"}:
-        raise EverBotError("Error: Please choose level 1, 2, 3, or 4.")
+    raw = input_fn("Choice (1/2/3/4/5): ").strip()
+    if raw not in {"1", "2", "3", "4", "5"}:
+        raise EverBotError("Error: Please choose option 1, 2, 3, 4, or 5.")
     return int(raw)
 
 
@@ -356,13 +385,36 @@ def run_level_4(
     return 0
 
 
+def run_advanced(
+    input_fn: Callable[[str], str] = input,
+    output_fn: Callable[[str], None] = print,
+    *,
+    color: bool = False,
+) -> int:
+    """Run multi-client allocation with an optional advanced summary."""
+    try:
+        inventory = read_inventory(input_fn, output_fn, color=color)
+        hours = read_client_hours(input_fn, output_fn, color=color)
+        summary = plan_advanced(inventory, hours)
+    except EverBotError as err:
+        output_fn("")
+        output_fn(_c(str(err), _BOLD, _RED, color=color))
+        return 1
+    output_fn("")
+    output_fn(format_multi_client_plan(summary.plan, color=color))
+    output_fn("")
+    output_fn(format_advanced_summary(summary, color=color))
+    output_fn("")
+    return 0
+
+
 def run(
     input_fn: Callable[[str], str] = input,
     output_fn: Callable[[str], None] = print,
     *,
     color: bool = False,
 ) -> int:
-    """Show the Level 1/2/3/4 menu, then dispatch to the chosen runner.
+    """Show Levels 1-4 and optional advanced features, then dispatch.
 
     Returns a process exit code (0 ok, 1 error).
     Colour defaults off so unit tests see plain text; ``main`` enables it on TTYs.
@@ -381,7 +433,9 @@ def run(
         return run_level_2(input_fn, output_fn, color=color)
     if level == 3:
         return run_level_3(input_fn, output_fn, color=color)
-    return run_level_4(input_fn, output_fn, color=color)
+    if level == 4:
+        return run_level_4(input_fn, output_fn, color=color)
+    return run_advanced(input_fn, output_fn, color=color)
 
 
 def main() -> int:

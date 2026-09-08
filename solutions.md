@@ -923,3 +923,40 @@ open items in README's Technical Debt. Source tests alone cannot close them.
 Documentation now distinguishes strategies from workflows, removes obsolete
 foundation-state claims from current guides, and keeps README concise. Historical
 decision entries above retain their original context.
+
+## 2026-09-08 - Optional advanced reporting
+
+### Decision and assumptions
+
+Owner approved menu option 5, active-plus-standby planned totals, aggregate
+requested/assigned capacity utilization, active inventory usage by count and
+percentage, and estimated useful-capacity utilization by type. Allocation keeps
+cost, excess, then robot-count priorities. Useful hours are attributed
+proportionally within each client, not by inventing a robot execution order.
+`advanced.py` composes the unchanged Level 4 service and uses standard-library
+Fraction for exact attribution until display. Zero type denominators show N/A;
+aggregate assigned capacity is always positive for validated nonempty requests.
+
+### Coverage assessment
+
+| Dimension | Assessment |
+|---|---|
+| Business/domain | Owner clarified totals and utilization; formulas in optional feature spec |
+| Architecture/maintainability | Separate summary service and CLI runner; reuse Level 4 unchanged |
+| Testing/regression | Failing tests first; exact totals, per-client attribution, weighted aggregation, zero stock, invalid input and menu termination |
+| UX | Planned totals, active/standby subtotals, estimated metric labels, N/A denominators |
+| Security | Existing numeric validation; no new dependencies, persistence or external sinks |
+| Performance | One additional pass over clients and types; Fraction arithmetic can grow with varied denominators; existing allocation search limits remain |
+| Documentation | Feature spec, README, application flow, context, testing guide and tool log updated |
+| Ops/production | Local CLI only; CI remains deferred; no commit, push or PR authorized |
+| Independent review | Read-only reviewer checked implementation and identified attribution-test gaps, now covered |
+
+Other specialist delegation was unnecessary: this reporting layer reuses existing
+allocation and validation, and the main reviewer covered the bounded change.
+
+### Trade-offs
+
+Proportional useful hours are a planning estimate, not measured runtime. Fractions
+avoid rounding accumulation; formatting rounds percentages to two decimal places.
+Active inventory excludes standby because standby stock has no finite denominator.
+No global allocation optimization, new input syntax, or large-input fixes are added.
