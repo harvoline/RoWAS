@@ -62,7 +62,7 @@ each agent file for why vague briefs are rejected).
 | `ux-agent` | CLI / UX | Terminal I/O clarity, error messages, help text, usability | Any change to CLI input/output/help |
 | `documentation-agent` | Documentation | README, workflow docs, decision records, handover quality | Any change requiring doc updates per `documentation-workflow.md` |
 | `devops-agent` | DevOps / Operations | Build, CI/CD, environment config, monitoring, release strategy | Only if the CI/CD-deferred decision in `rules.md` is revisited, or packaging/build changes |
-| `production-readiness-agent` | Production Readiness | Reliability, failure modes, observability, recovery, operational complexity | Level 3–4 changes only (see Review Levels) |
+| `production-readiness-agent` | Production Readiness | Reliability, failure modes, observability, recovery, operational complexity | Significant deployed-system concerns at review Levels 3-4; currently dormant |
 
 Every specialist file follows the same output contract (below) and is
 **read-only by design** — they get `Read`, `Grep`, `Glob`, and (where their
@@ -139,8 +139,9 @@ there rather than inventing a new one).
 
 Assessed dimensions: Impact, Complexity, Uncertainty, Failure Cost, Change
 Surface, Regression Risk, Security Risk, Performance Risk. These map to four
-review levels. Examples below are calibrated to *this* project (a CLI robot
-allocation system with no business logic yet):
+review levels, distinct from application allocation Levels 1-4. The sequences
+below are delegation examples; participation remains optional when the coverage
+assessment explains why it is unnecessary. Four allocation levels now exist:
 
 **Level 1 — Small Change.** Typo, doc-only edit, CLI wording tweak,
 formatting. Workflow: Orchestrator → one relevant specialist (usually
@@ -166,9 +167,8 @@ infrastructure once this system has any. Workflow: everything in Level 3,
 plus explicit human approval before implementation begins (not just before
 merge), and `production-readiness-agent` review after implementation.
 
-Nothing in this project has reached Level 3–4 yet — there is no business
-logic. This section exists so the escalation path is defined *before* it's
-needed.
+Allocation and multi-client business logic now exist. Assess each change by its
+risk; its allocation-level number does not determine its review category.
 
 ## Boundary Between Orchestrator and Specialists
 
@@ -332,8 +332,8 @@ Per the project's own instruction, this requires explicit justification —
 absence of justification is not sufficient reason to add one.
 
 - **Current Orchestrator is not insufficient.** There is exactly one
-  project owner, one repository, and (as of this writing) zero business
-  logic. A single Orchestrator can hold full context for every change.
+  project owner, one repository, and four allocation levels in a small CLI.
+  A single Orchestrator can hold the current application context.
 - **No complexity is causing a problem.** Sub-orchestrators solve
   *coordination* problems that appear when there are enough parallel
   workstreams that one orchestrator can't hold all the dependency edges in
@@ -341,8 +341,8 @@ absence of justification is not sufficient reason to add one.
   genuinely separate teams. Neither is true here.
 - **No responsibility exists that a new layer would own.** The three
   candidate layers (Domain, Technical, Operations) would each currently
-  have almost nothing to do — there's no domain logic, one technical
-  surface (a CLI), and no deployed operations.
+  duplicate existing responsibilities: one bounded allocation domain, one
+  technical surface (a CLI), and no persistent server operations.
 - **Added complexity would exceed the benefit.** An extra layer adds
   hand-off overhead, more places for a decision to get lost between layers,
   and more documentation to keep in sync — for zero coordination problem
@@ -362,9 +362,10 @@ owner without modification:
 1. **Specialist roster tool access.** Specialists remain read-only by
    design (see "Roles"). Revisit only if this becomes a genuine bottleneck
    in practice — not a scheduled reconsideration.
-2. **`devops-agent` and `production-readiness-agent` stay dormant** until
-   CI/CD or a deployed system respectively becomes real. Their near-empty
-   findings until then are expected, not a signal something's wrong.
+2. **`devops-agent` and `production-readiness-agent` stay dormant** for CI/CD
+   and deployed-system concerns until those become real. The packaging/build
+   exception in the trigger table remains available. Current CLI reliability
+   is covered by the Orchestrator and testing/UX review.
 3. **Devil's Advocate stays a dynamic brief**, not a dedicated agent file —
    applied to whichever existing specialist is least invested in the
    original recommendation, per requirement.

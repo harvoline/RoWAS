@@ -27,8 +27,8 @@ non-exercise work; use `TR…` when continuing the numbered EverBot level track.
   change. Do not bundle unrelated changes.
 - Commit messages must explain *why*, not just *what* (the diff already
   shows *what*).
-- Avoid giant commits. A scaffolding change, a business feature, and a
-  documentation update are three commits, not one.
+- Avoid giant commits. Include directly related documentation with the code or
+  decision it describes; separate unrelated scaffolding or documentation work.
 
 ## The Full Cycle
 

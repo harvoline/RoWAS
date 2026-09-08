@@ -232,5 +232,25 @@ work sits uncommitted on `TR05_LEVEL_4`.
   defect, and is recorded as a trade-off in `solutions.md`.
 - The menu's invalid-choice message changed from "1, 2, or 3" to "1, 2, 3, or 4";
   its existing test was updated deliberately, which is the only Level 1–3
-  behaviour touched by this change.
+   behaviour touched by this change.
 
+## 2026-09-08 - Review follow-up: termination and documentation
+
+**Tool used:** OpenCode, with a read-only documentation audit subagent.
+
+**Owner request:** Implement review item 3 (clean EOF/Ctrl+C handling), clarify
+item 5 (large-integer overflow), and refresh project documentation with a short
+README covering approach, decisions, assumptions, trade-offs, and improvements.
+
+**Work:** Added failing terminal-termination tests before the `main()` fix, then
+verified menu/all-level exits and subprocess EOF behaviour. Refreshed current
+project and agent guides, linked shared terminal behaviour from the level specs,
+and recorded outstanding review gaps without changing their implementations.
+
+**Limitations:** Ctrl+C is tested through injected KeyboardInterrupt, not a real
+terminal signal. Wheel installation is not verified. Overflow, search scalability,
+and build metadata compatibility remain open. No commit or push requested.
+
+**Verification:** Full suite passed (152 tests, 96% statement coverage); strict
+mypy passed on 14 source files. Subprocess coverage is not collected by the
+current coverage configuration, so entry-point execution is proved by assertions.

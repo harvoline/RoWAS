@@ -33,6 +33,9 @@ allocation strategy.
 | Invalid work hours | `Error: Work hours must be a positive integer.` |
 
 ## Levels
+
+All levels share the terminal exit behaviour in [Application Workflow](app-workflow.md):
+EOF exits 1 and Ctrl+C exits 130, with stderr messages and no traceback.
 - **Level 1 — Robot Category Distribution:** see `features/level-1.md`.
 - **Level 2 — Cost Optimised Allocation:** see `features/level-2.md`.
 - **Level 3 — Standby Robot Activation:** see `features/level-3.md`.
@@ -46,3 +49,4 @@ allocation strategy.
 | 1.2.0 | 2026-09-07 | Linked Level 2 cost-optimised spec. |
 | 1.3.0 | 2026-09-08 | Linked Level 3 standby activation + top-level menu. |
 | 1.4.0 | 2026-09-08 | Linked Level 4 multi-client allocation. |
+| 1.4.0 (docs) | 2026-09-08 | Linked shared CLI termination behaviour; robot rules unchanged. |

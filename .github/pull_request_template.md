@@ -22,6 +22,7 @@
 
 - [ ] `CLAUDE.md` updated, if this changes architecture/conventions/decisions
 - [ ] `app-workflow.md` updated, if this changes or adds application behaviour
+- [ ] `robots.md` and relevant `features/level-*.md` updated, if allocation rules change
 - [ ] `solutions.md` updated, if this involved a significant technical decision
 - [ ] `README.md` updated, if this changes setup/usage/known limitations
 - [ ] No documentation changes needed

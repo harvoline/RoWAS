@@ -18,7 +18,7 @@ the search is unbounded by stock.
 6. **Insufficient / uncoverable shortfall:** same
    `Error: Insufficient robot capacity to complete the requested work.` message
    (should not arise with unbounded types unless hours are invalid).
-7. **Top-level menu** chooses Level 1, 2, or 3; each level has a separate runner so
+7. **Top-level menu** currently chooses Level 1, 2, 3, or 4; each level has a separate runner so
    logics do not collide.
 
 ## Strategy for the shortfall
@@ -55,7 +55,9 @@ Client Work Requested: 16 hours
 ```
 
 ## CLI
-After the Level 1/2/3 menu, Level 3 prompts for **active** inventory (Bravo/Charlie/Delta)
+Shared EOF/Ctrl+C handling: [Application Workflow](../app-workflow.md).
+
+After the Level 1/2/3/4 menu, Level 3 prompts for **active** inventory (Bravo/Charlie/Delta)
 and client work hours — the same prompts as Levels 1–2. It does **not** ask for standby
 stock.
 
@@ -68,3 +70,4 @@ applicable after the additional-require path.
 | Version | Date | Change |
 |---------|------|--------|
 | 1.0.0 | 2026-09-08 | Initial Level 3 standby activation + top-level menu. |
+| 1.0.0 (docs) | 2026-09-08 | Refreshed menu context and linked shared termination handling. |

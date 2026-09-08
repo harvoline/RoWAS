@@ -38,9 +38,9 @@ domain rules ahead of requirements.
 
 ### Why these specific tools (not just "Python")
 
-- **src-layout** over flat-layout: prevents accidentally importing the
-  package from the working directory instead of the installed version —
-  catches packaging mistakes early. Standard modern practice.
+- **src-layout** over flat-layout: separates package code from repository files.
+  Current pytest configuration adds `src` to its import path, so source tests do
+  not verify installation. An installed-wheel smoke test remains technical debt.
 - **ruff** instead of separate flake8/black/isort: one fast dependency
   covers linting and import ordering; less tooling surface to maintain.
 - **mypy strict** from day one: cheaper to keep strict typing discipline
@@ -74,7 +74,9 @@ tests/              # allocation, cost, standby, multi-client, CLI, design tests
 
 **Principle:** CLI/input-output concerns stay separate from domain/business
 logic. Domain logic is testable without the terminal. Validation is separate
-from processing. New levels add an `AllocationStrategy` subclass (Open/Closed).
+from processing. Inventory allocation algorithms extend `AllocationStrategy`;
+multi-step workflows compose services, as Levels 3-4 do. `cli.main` handles EOF
+(exit 1) and Ctrl+C (exit 130) with stderr messages and no traceback.
 
 ## Important Conventions
 
@@ -156,6 +158,11 @@ and commits.
   not an oversight.
 
 ## Known Decisions
+
+Known review follow-ups are recorded in README's "Technical Debt": cubic search
+growth, floating-point search-bound overflow, setuptools metadata compatibility,
+and installed-package verification. These remain open; passing source checks
+does not establish readiness for large inputs or packaging correctness.
 
 | Decision | Rationale | Status |
 |---|---|---|

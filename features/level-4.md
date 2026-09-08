@@ -68,6 +68,8 @@ Service order 21, 17, 16, 12, 10.
 Total standby cost: $23.
 
 ## CLI
+Shared EOF/Ctrl+C handling: [Application Workflow](../app-workflow.md).
+
 Menu gains **option 4**, with its own runner so Level 1–3 logic does not collide.
 Prompts are the active inventory (Bravo/Charlie/Delta) then the multi-value client
 hours line. No standby stock is ever requested.
@@ -110,3 +112,4 @@ Zero active robots is valid — every client is then served entirely by standby.
 | Version | Date | Change |
 |---------|------|--------|
 | 1.0.0 | 2026-09-08 | Initial Level 4 multi-client allocation spec. |
+| 1.0.0 (docs) | 2026-09-08 | Linked shared EOF/Ctrl+C handling; allocation rules unchanged. |

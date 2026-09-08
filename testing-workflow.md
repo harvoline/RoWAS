@@ -49,7 +49,7 @@ argument wiring.
 
 ## Current State
 
-137 tests under `tests/`, all business-logic-bearing:
+Tests under `tests/` cover domain behaviour, CLI behaviour, and entry-point exits:
 
 | File | Covers |
 |---|---|
@@ -58,7 +58,7 @@ argument wiring.
 | `test_cost_optimised.py` | Level 2 cost objective and tie-breaks |
 | `test_standby.py` | Level 3 active capacity + unbounded shortfall fill |
 | `test_multiclient.py` | Level 4 hours parsing, priority order, shared-pool drawdown |
-| `test_cli.py` | Menu dispatch, all four runners, formatters, error paths |
+| `test_cli.py` | Menu dispatch, all four runners, formatters, error paths, EOF/Ctrl+C at `main`, subprocess EOF exits |
 
 Level 4 case breakdown (the categorisation this document mandates):
 
@@ -73,5 +73,14 @@ Level 4 case breakdown (the categorisation this document mandates):
 - **Failure:** insufficient capacity cannot occur while standby is unbounded — the
   shared error remains covered by the Level 1/2 tests that can still raise it.
 
-No integration or end-to-end tests beyond the CLI-level runner tests; the system
-has no persistence, network, or process boundaries to exercise.
+Termination failure cases cover EOF and KeyboardInterrupt at the menu and each
+level's hours prompt. Subprocess tests exercise `python -m everbot` with EOF at
+the menu and inventory prompts, asserting exit 1 and stderr without a traceback.
+Ctrl+C is injected as KeyboardInterrupt in process-boundary unit tests; real
+terminal signal delivery is not exercised. The intended exit code is 130.
+
+The suite has no persistence or network integration to exercise. It does have a
+process boundary. Pytest adds `src` to the import path, and module subprocess tests
+use the current environment; neither proves an independently installed wheel.
+Remaining gaps: installed console-script smoke tests, build metadata validation,
+scale benchmarks, very-large-integer bounds, and independent optimality oracles.

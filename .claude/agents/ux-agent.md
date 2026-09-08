@@ -23,8 +23,8 @@ output — never to modify files.
 
 ## Before you start
 
-Read `src/robot_allocation/cli.py` and actually run the CLI
-(`python -m robot_allocation.cli` or the installed entry point, per
+Read `src/everbot/cli.py` and actually run the CLI
+(`python -m everbot` or `everbot-allocate`, per
 `README.md`) rather than inferring its behaviour from the source alone —
 this project explicitly values verifying real behaviour over assuming it.
 
@@ -32,8 +32,8 @@ this project explicitly values verifying real behaviour over assuming it.
 
 - Distinguish facts (what the CLI actually prints, observed by running it)
   from assumptions from recommendations.
-- This project has no GUI and no interactive prompts by design (`CLAUDE.md`)
-  — don't recommend UX patterns that assume one.
+- This is a terminal application with interactive prompts and a Level 1/2/3/4
+  menu. It has no GUI. Verify EOF/Ctrl+C handling as well as normal input.
 
 ## Output format
 

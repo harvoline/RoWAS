@@ -72,6 +72,17 @@ Invalid menu choice exits with a clear error. Level 4 rejects an empty hours
 line or any non-positive/non-integer value with the shared work-hours message,
 and never reports insufficient capacity because standby is unbounded.
 
+Both executable entry points use `cli.main()` as the terminal boundary. EOF at
+any prompt prints `Error: Input ended before allocation completed.` to stderr and
+exits 1. Ctrl+C prints `Allocation cancelled.` to stderr and exits 130, including
+when allocation is running. Neither produces a traceback. Restart to try again;
+there is no persisted state. Direct runner callers handle termination themselves.
+
+Unbounded standby describes stock availability, not computational scalability.
+Large requests can be slow; extremely large integers can overflow the current
+floating-point search bounds. These are known implementation limits, not new
+business validation rules (see README "Technical Debt" and `solutions.md`).
+
 ## System boundaries
 
 - No persistence, no network I/O, no GUI.

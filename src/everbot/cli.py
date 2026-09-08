@@ -385,7 +385,15 @@ def run(
 
 
 def main() -> int:
-    return run(color=sys.stdout.isatty())
+    """Run the terminal session, handling EOF and user cancellation once."""
+    try:
+        return run(color=sys.stdout.isatty())
+    except EOFError:
+        print("\nError: Input ended before allocation completed.", file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        print("\nAllocation cancelled.", file=sys.stderr)
+        return 130
 
 
 if __name__ == "__main__":

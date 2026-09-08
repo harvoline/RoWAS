@@ -32,6 +32,8 @@ Excess is minimised globally, not just by filling the remainder with one robot.
 4. All robots still can't reach requested hours -> `Error: Insufficient robot capacity to complete the requested work.`
 
 ## CLI
+Shared EOF/Ctrl+C handling: [Application Workflow](../app-workflow.md).
+
 Input:
 ```
 Enter number of robots available:
@@ -58,3 +60,4 @@ Client Work Hours Requested: 16
 | Version | Date | Change |
 |---------|------|--------|
 | 1.0.0 | 2026-09-06 | Initial Level 1 category-distribution strategy. |
+| 1.0.0 (docs) | 2026-09-08 | Linked shared EOF/Ctrl+C handling; allocation rules unchanged. |

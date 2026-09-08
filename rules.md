@@ -33,7 +33,7 @@ repository. They do not get silently overridden by convenience.
 - Avoid unnecessary dependencies. Every dependency added must have a
   documented reason (see `solutions.md`).
 - Keep responsibilities separated: CLI/IO concerns, validation, and business
-  logic must not be mixed together once business logic exists.
+  logic must not be mixed together.
 - Validate all external/user input explicitly.
 - Handle errors explicitly — do not swallow exceptions or fail silently.
 - Do not introduce technical debt without documenting it in `README.md`
@@ -97,10 +97,9 @@ act. Two additions specific to multi-agent delegation:
   require the same stop-and-ask as the destructive/architectural items
   above.
 
-## Business Logic Freeze
+## Business Requirements
 
-Robot allocation business functionality must not be implemented until the
-project owner explicitly provides the requirement. This rule was set during
-foundation setup and remains in force until superseded by a later
-instruction — check `CLAUDE.md` "Known Decisions" for the current status
-before assuming it still applies.
+Levels 1-4 are implemented from owner requirements. New allocation levels or
+changes to business rules still require explicit owner requirements; do not
+invent them from implementation convenience. Current shared rules live in
+`robots.md`, with per-level rules in `features/`.

@@ -1,6 +1,12 @@
-"""Tests for the interactive CLI flow (menu + Level 1/2/3 runners)."""
+"""Tests for the interactive CLI flow and process entry point."""
 
-from everbot import allocate
+import subprocess
+import sys
+from functools import partial
+
+import pytest
+
+from everbot import allocate, cli
 from everbot.cli import (
     format_allocation,
     format_comparison,
@@ -30,6 +36,46 @@ def make_io(inputs):
         output.append(line)
 
     return input_fn, output_fn, output
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [[], ["1", "1", "1", "1"], ["2", "1", "1", "1"],
+     ["3", "1", "1", "1"], ["4", "1", "1", "1"]],
+)
+@pytest.mark.parametrize(
+    "error, expected_code, message",
+    [
+        (EOFError, 1, "Error: Input ended before allocation completed."),
+        (KeyboardInterrupt, 130, "Allocation cancelled."),
+    ],
+)
+def test_main_handles_input_termination(monkeypatch, capsys, prefix, error, expected_code, message):
+    inputs = iter(prefix)
+
+    def input_fn(_prompt):
+        try:
+            return next(inputs)
+        except StopIteration:
+            raise error from None
+
+    monkeypatch.setattr(cli, "run", partial(cli.run, input_fn=input_fn))
+    assert cli.main() == expected_code
+    captured = capsys.readouterr()
+    assert message in captured.err
+    assert "Traceback" not in captured.err
+    assert "Total Standby Cost" not in captured.out
+
+
+@pytest.mark.parametrize("stdin", ["", "1\n", "2\n", "3\n", "4\n"])
+def test_module_entry_point_handles_eof(stdin):
+    result = subprocess.run(
+        [sys.executable, "-m", "everbot"], input=stdin, text=True, capture_output=True,
+        timeout=10,
+    )
+    assert result.returncode == 1
+    assert "Error: Input ended before allocation completed." in result.stderr
+    assert "Traceback" not in result.stderr
 
 
 # --- menu -------------------------------------------------------------------

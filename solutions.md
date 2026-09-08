@@ -857,3 +857,69 @@ capacity cannot arise" note in `features/level-4.md` both need revisiting. If
 allocation quality across clients ever matters more than the stated priority rule,
 the greedy loop is the single place to replace.
 
+## 2026-09-08 - CLI termination and review follow-ups
+
+### Problem and decision
+
+EOF and Ctrl+C escaped the terminal boundary as tracebacks. Handle only
+`EOFError` and `KeyboardInterrupt` in `cli.main`: EOF prints
+`Error: Input ended before allocation completed.` to stderr and returns 1;
+interruption prints `Allocation cancelled.` to stderr and returns 130.
+Both executable entry points already call this boundary. Reusable runners retain
+their existing exception behaviour. No allocation rules or dependencies change.
+
+### Coverage assessment
+
+| Dimension | Assessment and ownership |
+|---|---|
+| Business / domain | Existing rules retained; no new allocation requirement |
+| Architecture / maintainability | Main reviewer: one CLI-boundary handler avoids repeated catches |
+| Testing / regression / edge cases | Main reviewer: failing tests first, menu and all four levels, subprocess EOF checks |
+| CLI / error handling | Main reviewer: stderr, explicit exits, no traceback, restart after termination |
+| Security | Main reviewer: no new input sink or dependency; catch only expected termination exceptions |
+| Performance | Existing cubic search and numeric-bound issues documented, not changed |
+| Documentation | Read-only specialist checked remaining agent/documentation drift; main reviewer owns edits |
+| Git / operations | Working branch retained; no commit, publication, or CI change requested |
+| Production readiness / technical debt | Local CLI reliability improved; installed-wheel verification remains open |
+
+Specialist investigation was limited to documentation drift: the code change is
+small and the main reviewer can verify all runtime dimensions directly.
+
+### Alternatives and trade-offs
+
+Catching in every runner duplicates policy and misses menu input. Catching all
+exceptions would hide programming defects. A retry loop adds interaction policy
+outside this fix. Handling expected termination once keeps domain services free
+of terminal concerns. Existing domain-error output remains unchanged.
+
+### Clarification of review issue 5: integer overflow
+
+Python integers can represent `10**310`, and the positive-integer validator
+accepts it. However, `ceil(hours / robot.hours)` performs `/` first, creating a
+floating-point result. Floats have a finite range (about `1.8e308`), so that
+division can raise `OverflowError` before `ceil` runs. For example,
+`plan_standby({}, 10**310)` currently fails inside standby search-bound creation.
+The same calculation exists in both allocation strategies.
+
+This is a numerical implementation limit, not a negative/non-integer input error.
+It is unlikely for normal manually entered requests, but contradicts accepting
+arbitrarily large positive integers without a documented numerical limit.
+For positive integers, `(hours + robot.hours - 1) // robot.hours` computes the
+ceiling exactly without a float; retain the existing `+ 1` search margin after it.
+This recommended change is not implemented in this task.
+
+Integer division only fixes bound arithmetic. It does not make a search over
+astronomical counts feasible. Search optimisation and a deliberate supported-scale
+policy need separate consideration; no business input maximum was invented here.
+
+### Updated review assessment
+
+Earlier Level 2/4 records treated terminal-sized searches as low risk. A review
+probe of `fill_shortfall(1000)` took about 3.5 seconds, so those historical
+assessments do not establish current scalability. Cubic growth, numeric overflow,
+the setuptools minimum/SPDX mismatch, and installed-package verification are
+open items in README's Technical Debt. Source tests alone cannot close them.
+
+Documentation now distinguishes strategies from workflows, removes obsolete
+foundation-state claims from current guides, and keeps README concise. Historical
+decision entries above retain their original context.
