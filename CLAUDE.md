@@ -13,16 +13,17 @@ business rules. The application reads input from the terminal, applies
 allocation rules, and produces output. There is no GUI and no persistent
 server component.
 
-**Current state:** Levels 1–3 are implemented under `src/everbot/` (category
-distribution, cost-optimised allocation with L1/L2 comparison, and standby
-activation behind a Level 1/2/3 menu). Further levels will be added
-progressively by the project owner.
+**Current state:** Levels 1–4 are implemented under `src/everbot/` (category
+distribution, cost-optimised allocation with L1/L2 comparison, standby
+activation, and multi-client allocation behind a Level 1/2/3/4 menu). Further
+levels will be added progressively by the project owner.
 
 ## Domain Context
 
 Shared robot rules: [`robots.md`](robots.md). Per-level strategies:
 [`features/`](features/) (Level 1 category distribution; Level 2 cost-optimised;
-Level 3 standby activation). Do not invent new domain rules ahead of requirements.
+Level 3 standby activation; Level 4 multi-client allocation). Do not invent new
+domain rules ahead of requirements.
 
 ## Technology Stack
 
@@ -64,10 +65,11 @@ src/everbot/
     strategies/     # AllocationStrategy + CategoryDistribution + CostOptimised
     comparison.py   # Level 1 vs Level 2 cost comparison
     standby.py      # Level 3 standby plan (active capacity + shortfall fill)
-    cli.py          # interactive CLI (Level 1/2/3 menu + runners)
-features/level-1.md, features/level-2.md, features/level-3.md
+    multiclient.py  # Level 4 multi-client plan (shared pool, hours parsing)
+    cli.py          # interactive CLI (Level 1/2/3/4 menu + runners)
+features/level-1.md ... features/level-4.md
 robots.md
-tests/              # allocation, cost, standby, CLI, design/structure tests
+tests/              # allocation, cost, standby, multi-client, CLI, design tests
 ```
 
 **Principle:** CLI/input-output concerns stay separate from domain/business
@@ -163,6 +165,7 @@ and commits.
 | Level 1 strategy pattern (Allocator + AllocationStrategy) | Open/Closed for future levels; shared validation in Allocator | **Confirmed** |
 | Level 2 CostOptimisedStrategy + L1/L2 comparison | Min cost (then excess, fewest robots); CLI compares strategies | **Confirmed** |
 | Level 3 standby workflow + Level 1/2/3 menu | Active capacity first; unbounded shortfall fill; separate runners | **Confirmed** |
+| Level 4 multi-client workflow (`multiclient.py`) | Shared active pool drawn down highest-hours-first; whole-robot consumption; reuses Level 3 shortfall fill | **Confirmed** |
 | pytest + ruff + mypy(strict) | Minimal, standard, covers testing/lint/types | Confirmed |
 | setuptools build backend | Ubiquitous, avoids extra tooling dependency | Confirmed |
 | Repository hosting / PR platform | GitHub: `harvoline/RoWAS` | **Confirmed** |
@@ -172,7 +175,7 @@ and commits.
 ## Things an AI/Developer Must Know Before Modifying This Project
 
 1. **Do not invent new allocation levels or domain rules** until explicitly
-   instructed. Levels 1–3 are implemented; further levels need owner requirements.
+   instructed. Levels 1–4 are implemented; further levels need owner requirements.
 2. Check for a local, gitignored `user-setup.md` before assuming a standard
    command (e.g. `git`) will behave exactly as documented — some
    sandboxed/managed environments need a different invocation. Never add

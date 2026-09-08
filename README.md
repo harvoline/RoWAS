@@ -4,10 +4,11 @@ A terminal-based system for allocating work to robots, built for EverBot Solutio
 
 ## Status
 
-**Levels 1–3 implemented.** The CLI presents a Level 1/2/3 menu: Level 1 category
-distribution, Level 2 cost-optimised allocation with L1/L2 cost comparison, and
-Level 3 standby robot activation (active capacity first, optional additional
-standby). Foundation scaffolding remains; further levels land as reviewed branches.
+**Levels 1–4 implemented.** The CLI presents a Level 1/2/3/4 menu: Level 1 category
+distribution, Level 2 cost-optimised allocation with L1/L2 cost comparison, Level 3
+standby robot activation (active capacity first, optional additional standby), and
+Level 4 multi-client allocation (several clients share one active pool, served
+highest hours first). Further levels land as reviewed branches.
 
 ## Business Problem
 
@@ -30,8 +31,9 @@ src/everbot/                 Application package (src-layout)
                              CostOptimised strategies
   comparison.py              Level 1 vs Level 2 cost comparison
   standby.py                 Level 3 standby plan (capacity + shortfall fill)
-  cli.py                     Interactive CLI (Level 1/2/3 menu + runners)
-features/                    Per-level specs (level-1.md, level-2.md, level-3.md)
+  multiclient.py             Level 4 multi-client plan (shared pool + parsing)
+  cli.py                     Interactive CLI (Level 1/2/3/4 menu + runners)
+features/                    Per-level specs (level-1.md ... level-4.md)
 robots.md                    Shared robot reference
 tests/                       pytest suite mirroring the package
 ```
@@ -78,7 +80,7 @@ everbot-allocate
 python -m everbot
 ```
 
-The CLI first asks you to choose Level 1, 2, or 3. Example Level 2 session
+The CLI first asks you to choose Level 1, 2, 3, or 4. Example Level 2 session
 (see [`features/level-2.md`](features/level-2.md)); choose `2` at the menu:
 
 ```
@@ -124,6 +126,38 @@ recommends the cost-optimised set of additional standby robots to activate/buy
 (no standby inventory prompt; unbounded search). Colours additional lines by
 robot type. See [`features/level-3.md`](features/level-3.md).
 
+## Level 4 — Multi-Client Allocation
+
+Serves several clients from one active inventory in a single run. The hours prompt
+accepts a single value, comma-separated, or space-separated values — the number of
+values is the number of clients. Clients are served highest-hours-first; a client
+the remaining pool can cover takes a cost-optimised set of those robots, and anything
+the pool cannot cover becomes a Level 3-style standby recommendation. Robots assigned
+to a client are consumed for the day. See [`features/level-4.md`](features/level-4.md).
+
+```
+Choice (1/2/3/4): 4
+Enter number of robots available:
+Bravo: 2
+Charlie: 3
+Delta: 2
+
+Client working hours: 12,16,17,10,21
+
+Active Robot Capacity: 37 hours
+Clients: 5 (served highest hours first)
+
+Client 5: 21 hours requested
+  Active Robots Allocated: Charlie: 1, Delta: 2 (21 hours)
+
+Client 3: 17 hours requested
+  Active Robots Allocated: Bravo: 2, Charlie: 2 (16 hours)
+  Additional Standby Robots Required:
+    Bravo: 1 - cost $2
+
+Total Standby Cost: $23
+```
+
 ## Running Tests
 
 ```bash
@@ -152,6 +186,7 @@ See [`coding-workflow.md`](coding-workflow.md) and
 | [`features/level-1.md`](features/level-1.md) | Level 1 category-distribution spec |
 | [`features/level-2.md`](features/level-2.md) | Level 2 cost-optimised allocation + comparison |
 | [`features/level-3.md`](features/level-3.md) | Level 3 standby robot activation |
+| [`features/level-4.md`](features/level-4.md) | Level 4 multi-client allocation |
 | [`tools.md`](tools.md) | Log of AI tool usage and outcomes |
 | [`solutions.md`](solutions.md) | Engineering reasoning behind significant decisions |
 | [`app-workflow.md`](app-workflow.md) | Functional/business workflow |
@@ -163,8 +198,8 @@ See [`coding-workflow.md`](coding-workflow.md) and
 
 ## Known Limitations / Open Decisions
 
-- **Higher levels beyond 3 not yet implemented.** Levels 1–2 use strategy
-  subclasses; Level 3 uses a standby workflow module + menu runners.
+- **Higher levels beyond 4 not yet implemented.** Levels 1–2 use strategy
+  subclasses; Levels 3–4 use workflow modules + menu runners.
 - **Repository hosting: decided.** GitHub, at
   [harvoline/RoWAS](https://github.com/harvoline/RoWAS) (`origin`).
 - **CI/CD: explicitly deferred.** See `solutions.md`; revisit when justified.
@@ -173,4 +208,7 @@ See [`coding-workflow.md`](coding-workflow.md) and
 
 ## Technical Debt
 
-None yet. This section will track deliberate shortcuts as they are introduced.
+None outstanding. Level 4 removed the one item worth noting: `standby.py` previously
+reached into `Allocator`'s private validators, which are now public
+(`Allocator.validate_hours` / `validate_inventory`) alongside `standby.fill_shortfall`,
+since Level 4 became the second real caller.
