@@ -6,14 +6,18 @@ Levels 1-4 are implemented. The interactive CLI presents a top-level menu to
 choose Level 1 (category distribution), Level 2 (cost-optimised + L1/L2
 comparison), Level 3 (standby activation), or Level 4 (multi-client allocation).
 Each level has a separate runner so logics do not collide.
+Option 5, **Optional Advanced Features**, runs the same multi-client allocation
+through `run_advanced` and prints an allocation summary after all client blocks.
 
 ```mermaid
 flowchart TD
-    A[Run CLI] --> M[Select Level 1 / 2 / 3 / 4]
+    A[Run CLI] --> M[Select Level 1 / 2 / 3 / 4 or optional features]
     M -->|1| L1[run_level_1]
     M -->|2| L2[run_level_2]
     M -->|3| L3[run_level_3]
     M -->|4| L4[run_level_4]
+    M -->|5 Optional Advanced Features| A5[run_advanced: plan_advanced]
+    A5 --> O5[Per-client plan then totals and utilization metrics]
     L1 --> I1[Read inventory + hours]
     I1 --> A1[CategoryDistributionStrategy]
     A1 --> O1[Print Robot Assignment]
@@ -30,7 +34,7 @@ flowchart TD
 
 ## Input flow
 
-1. Prompt `Select allocation level:` with choices 1 / 2 / 3 / 4.
+1. Prompt `Select allocation level:` with choices 1 / 2 / 3 / 4 / 5 (optional advanced).
 2. Prompt `Enter number of robots available:` then `Bravo:`, `Charlie:`, `Delta:`
    (active inventory for all levels; Level 3 does **not** ask for standby stock).
 3. Prompt `Enter client work hours:` (Levels 1-3, one value). Level 4 instead
@@ -84,6 +88,13 @@ floating-point search bounds. These are known implementation limits, not new
 business validation rules (see README "Technical Debt" and `solutions.md`).
 
 ## System boundaries
+
+Optional advanced flow: read active inventory and multi-client hours; validate;
+reuse `plan_multi_client`; aggregate active/standby robot counts and charging costs;
+attribute useful hours proportionally within each client, then sum by type.
+Display overall requested/assigned capacity utilization and each type's active
+inventory usage and estimated useful-capacity utilization. Zero denominators
+display N/A. Full definitions: `features/optional-advanced.md`.
 
 - No persistence, no network I/O, no GUI.
 - Domain logic (`Allocator` / strategies / `plan_standby` / `plan_multi_client`)

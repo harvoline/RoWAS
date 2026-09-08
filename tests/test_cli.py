@@ -41,7 +41,7 @@ def make_io(inputs):
 @pytest.mark.parametrize(
     "prefix",
     [[], ["1", "1", "1", "1"], ["2", "1", "1", "1"],
-     ["3", "1", "1", "1"], ["4", "1", "1", "1"]],
+     ["3", "1", "1", "1"], ["4", "1", "1", "1"], ["5", "1", "1", "1"]],
 )
 @pytest.mark.parametrize(
     "error, expected_code, message",
@@ -67,7 +67,7 @@ def test_main_handles_input_termination(monkeypatch, capsys, prefix, error, expe
     assert "Total Standby Cost" not in captured.out
 
 
-@pytest.mark.parametrize("stdin", ["", "1\n", "2\n", "3\n", "4\n"])
+@pytest.mark.parametrize("stdin", ["", "1\n", "2\n", "3\n", "4\n", "5\n"])
 def test_module_entry_point_handles_eof(stdin):
     result = subprocess.run(
         [sys.executable, "-m", "everbot"], input=stdin, text=True, capture_output=True,
@@ -133,7 +133,37 @@ def test_menu_rejects_invalid_choice():
     input_fn, output_fn, output = make_io(["9"])
     code = run(input_fn, output_fn)
     assert code == 1
-    assert "choose level 1, 2, 3, or 4" in "\n".join(output).lower()
+    assert "choose option 1, 2, 3, 4, or 5" in "\n".join(output).lower()
+
+
+def test_advanced_menu_shows_summary_after_clients():
+    input_fn, output_fn, output = make_io(["5", "2", "3", "2", "12,16,17,10,21"])
+    assert run(input_fn, output_fn) == 0
+    text = "\n".join(output)
+    assert "5. Optional Advanced Features" in text
+    assert "Total Robots Used: 14 (active 7, standby 7)" in text
+    assert "Total Charging Cost: $44 (active $21, standby $23)" in text
+    assert "Avg Robot Utilization: 96.20%" in text
+    assert "Requested Hours: 76" in text
+    assert "Assigned Capacity: 79 hours" in text
+    assert text.index("Allocation Summary") > text.index("Client 4: 10 hours")
+    assert "Bravo Active Inventory Usage: 2/2 (100.00%)" in text
+    assert "Estimated Useful Working Capacity" in text
+
+
+def test_advanced_zero_inventory_and_unused_type_show_na():
+    input_fn, output_fn, output = make_io(["5", "0", "0", "0", "8"])
+    assert run(input_fn, output_fn) == 0
+    text = "\n".join(output)
+    assert "Bravo Active Inventory Usage: 0/0 (N/A)" in text
+    assert "Bravo Estimated Useful Working Capacity: N/A" in text
+    assert "Delta Estimated Useful Working Capacity: 100.00%" in text
+
+
+def test_advanced_invalid_input_does_not_print_summary():
+    input_fn, output_fn, output = make_io(["5", "1", "1", "1", "0"])
+    assert run(input_fn, output_fn) == 1
+    assert "Allocation Summary" not in "\n".join(output)
 
 
 # --- Level 2 runner (unchanged behaviour) -----------------------------------

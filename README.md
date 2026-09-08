@@ -2,6 +2,8 @@
 
 A Python 3.10+ terminal application that assigns Bravo, Charlie, and Delta robots
 to client work. Levels 1-4 are implemented; there is no server, GUI, or persistence.
+Menu option **5. Optional Advanced Features** adds allocation totals and efficiency
+metrics to the multi-client workflow.
 
 ## Setup and Run
 
@@ -38,11 +40,13 @@ request; no allocation is persisted.
 | 2 | Minimise charging cost, then excess, robot count, and deterministic type preference; compare against Level 1 |
 | 3 | Use full active capacity, then recommend cost-optimised standby for the shortfall |
 | 4 | Serve clients highest-hours-first from a shared pool; apply Level 2 or standby per client |
+| 5 (optional) | Same allocation as Level 4, followed by active/standby robot and cost totals, overall utilization, and per-type metrics |
 
 `src/everbot/` separates terminal I/O (`cli.py`) from shared validation (`allocator.py`),
 allocation strategies (`strategies/`), and workflow services (`standby.py`,
 `multiclient.py`). Robot definitions and allocation results centralise derived hours
 and costs. Strategies suit Levels 1-2; workflow composition suits Levels 3-4.
+`advanced.py` derives summary metrics separately from terminal formatting.
 
 Python and standard-library domain code keep dependencies small. Setuptools provides
 packaging; pytest, Ruff, and strict mypy cover behaviour, lint, and source types.
@@ -56,6 +60,9 @@ add `src` to the import path, so they do not prove packaging works.
 - Robots work once per day. Excess hours are allowed; assigned robots cannot be
   split across clients. Bravo/Charlie/Delta provide 3/5/8 hours for $2/$3/$4.
 - Standby stock is unbounded. Costs represent charging, not purchase prices.
+- Advanced totals include recommended standby. Active inventory usage excludes
+  standby; useful-capacity utilization includes it. Useful work is estimated
+  proportionally per client, then aggregated by type. Zero denominators show N/A.
 - Level 4 preserves input order for equal requests. Its prescribed greedy ordering
   does not guarantee the lowest total cost across all clients.
 - Exhaustive bounded searches are easy to inspect and preserve exact objectives,
@@ -94,6 +101,8 @@ convention; branch protection is unavailable under the recorded repository setup
 Higher allocation levels require new owner requirements.
 
 ## Project Documentation
+
+- [Optional advanced features and metric formulas](features/optional-advanced.md)
 
 - [Robot rules](robots.md), [Level 1](features/level-1.md), [Level 2](features/level-2.md),
   [Level 3](features/level-3.md), [Level 4](features/level-4.md)
