@@ -19,6 +19,8 @@ Documentation should be:
 |---|---|
 | Architecture changes | `CLAUDE.md` |
 | Business rule changes | `app-workflow.md`, and `CLAUDE.md` domain context if the change is foundational |
+| Shared robot or level rules change | `robots.md`, affected `features/level-*.md`, with changelog entries |
+| Shared CLI behaviour changes | `app-workflow.md`, `README.md`, `testing-workflow.md`; link shared behaviour from level specs |
 | Git/process workflow changes | `coding-workflow.md` |
 | Testing strategy changes | `testing-workflow.md` |
 | New infrastructure / tooling | `CLAUDE.md`, `README.md` |
@@ -28,6 +30,12 @@ Documentation should be:
 | Multi-agent workflow / specialist roster changes | `orchestrator-workflow.md`, `.claude/agents/*.md` |
 
 ## What Not to Document
+
+Keep README short: setup, approach, design decisions, assumptions, trade-offs,
+verification, and prioritised improvement areas. Link detailed specifications and
+decision records instead of duplicating them. Refresh current-state claims across
+contributor/agent guides when they drift. Preserve dated historical records; append
+a new entry when later evidence changes an earlier assessment.
 
 Do not document implementation details that will go stale quickly (e.g. "line
 42 does X") unless understanding that specific detail is important to

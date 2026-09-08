@@ -770,3 +770,156 @@ colliding.
 
 Owner example (1/1/1 active, 21h -> Charlie:1 @ $3) and no-additional-when-covered
 cases pass; existing Level 1/2 tests remain green via their runners / menu paths.
+
+## Level 4 — Multi-Client Allocation
+
+### Problem
+
+Level 3 served exactly one client. The owner's Level 4 requirement is "Level 3 +
+multi-client": accept several client working-hour values on one input line
+(single, comma-separated, or space-separated), prioritise by highest hours
+requested, and list the standby robots needed when active robots fall short.
+
+### Coverage assessment
+
+Delegation to the specialist roster was **not** used for this change; the
+reasoning per `orchestrator-workflow.md` ("coverage is mandatory, participation
+is optional") is recorded here rather than left silent.
+
+| Dimension | Status |
+|---|---|
+| Business / Requirements | Owner answered directly ("level 4 = level 3 + improvement"); the one genuinely open point — how the shared pool behaves — was decided from `robots.md`'s once-per-day rule, not invented |
+| Domain / Data | Relevant. One new entity pair (`ClientPlan`, `MultiClientPlan`); no change to `Robot`, `Allocation`, or the error hierarchy |
+| Architecture | Relevant. Mirrors the Level 3 precedent (workflow module, not an `AllocationStrategy`); no new dependency, no structural change |
+| Testing | Relevant. Normal/edge/invalid breakdown written before implementation (see `testing-workflow.md`) |
+| CLI / UX | Relevant. New prompt wording matches the owner's `Client working hours:` sample; menu grows to four options |
+| Security | Low. One new input string, parsed with an explicit whitelist (integers only) and the existing validators; no new trust boundary, dependency, or data flow |
+| Performance | Low. The per-client search is the same bounded triple loop as Level 2, run once per client; input sizes are terminal-typed |
+| Documentation | Relevant. Handled in this change (`features/level-4.md`, `app-workflow.md`, `robots.md`, `README.md`, `CLAUDE.md`, `testing-workflow.md`, `tools.md`) |
+| CI/CD / Ops | Not relevant. Deferred by standing decision; nothing here revisits it |
+| Production readiness | Not relevant. No deployed system |
+| Regression risk | Contained: Levels 1–3 behaviour is unchanged except the menu error string, which its test now asserts in the new form |
+
+### Decision
+
+- New workflow module `multiclient.py` (`plan_multi_client` / `MultiClientPlan` /
+  `ClientPlan`), following the Level 3 precedent rather than adding an
+  `AllocationStrategy` — Level 4 is a scheduling pass over several requests, not a
+  single-inventory allocation algorithm.
+- `parse_client_hours` lives in the domain, not the CLI: "how many clients does
+  this input describe" is a business rule, and it keeps the terminal layer thin.
+- **Shared pool, whole-robot consumption.** Clients are served in descending hours
+  (ties by input order). If the remaining pool covers a client, it takes a
+  cost-optimised subset of those robots (Level 2 objective); otherwise it takes
+  every remaining robot and its shortfall goes to the Level 3 unbounded standby
+  fill. A robot assigned to a client is spent for the day, so its unused hours are
+  excess rather than credit for the next client.
+- Clients keep their **input position** as their label while being served in
+  priority order, so the output is traceable back to what was typed.
+- `Allocator._validate_hours` / `_validate_inventory` became public
+  (`validate_hours` / `validate_inventory`), and `standby._fill_shortfall` became
+  `fill_shortfall`. Level 4 is the second real caller — the trigger the project's
+  "no premature abstraction" rule asks for — and `standby.py` was already reaching
+  into the private names.
+
+### Reasoning
+
+Hours-only drawdown (tracking the pool as a single number, as Level 3 does) was
+rejected: it lets one Delta's day be split between two clients, contradicting
+`robots.md`. Evaluating every client against the full inventory independently was
+also rejected: it makes "prioritise by highest hours" allocatively meaningless,
+since nothing is contended. Greedy highest-first is what the requirement states,
+so it is implemented literally rather than replaced with a global optimisation
+over all clients.
+
+### Trade-offs
+
+- Greedy service order can cost more overall than a globally optimised split
+  across clients — accepted, because the priority rule is the requirement.
+- A client that only needs a few hours can consume a Delta and leave nothing for
+  the next client. That is the domain rule, and the test
+  `test_assigned_robot_is_consumed_not_split_across_clients` pins it.
+- `MultiClientPlan` exposes totals (`total_standby_cost`, `total_requested_hours`)
+  that only the CLI currently uses; kept because they are one-line derived
+  properties, not a new abstraction layer.
+
+### Result
+
+`features/level-4.md` spec, `multiclient.py`, menu option 4 with `run_level_4`,
+and 43 new tests. Full suite 137 passed, `ruff check .` clean, `mypy src` (strict)
+clean. The owner's `12,16,17,10,21` example produces the documented plan with a
+$23 total standby cost, verified by running the CLI end to end.
+
+### Future Considerations
+
+If standby ever gains a real stock limit, the unbounded fill and the "insufficient
+capacity cannot arise" note in `features/level-4.md` both need revisiting. If
+allocation quality across clients ever matters more than the stated priority rule,
+the greedy loop is the single place to replace.
+
+## 2026-09-08 - CLI termination and review follow-ups
+
+### Problem and decision
+
+EOF and Ctrl+C escaped the terminal boundary as tracebacks. Handle only
+`EOFError` and `KeyboardInterrupt` in `cli.main`: EOF prints
+`Error: Input ended before allocation completed.` to stderr and returns 1;
+interruption prints `Allocation cancelled.` to stderr and returns 130.
+Both executable entry points already call this boundary. Reusable runners retain
+their existing exception behaviour. No allocation rules or dependencies change.
+
+### Coverage assessment
+
+| Dimension | Assessment and ownership |
+|---|---|
+| Business / domain | Existing rules retained; no new allocation requirement |
+| Architecture / maintainability | Main reviewer: one CLI-boundary handler avoids repeated catches |
+| Testing / regression / edge cases | Main reviewer: failing tests first, menu and all four levels, subprocess EOF checks |
+| CLI / error handling | Main reviewer: stderr, explicit exits, no traceback, restart after termination |
+| Security | Main reviewer: no new input sink or dependency; catch only expected termination exceptions |
+| Performance | Existing cubic search and numeric-bound issues documented, not changed |
+| Documentation | Read-only specialist checked remaining agent/documentation drift; main reviewer owns edits |
+| Git / operations | Working branch retained; no commit, publication, or CI change requested |
+| Production readiness / technical debt | Local CLI reliability improved; installed-wheel verification remains open |
+
+Specialist investigation was limited to documentation drift: the code change is
+small and the main reviewer can verify all runtime dimensions directly.
+
+### Alternatives and trade-offs
+
+Catching in every runner duplicates policy and misses menu input. Catching all
+exceptions would hide programming defects. A retry loop adds interaction policy
+outside this fix. Handling expected termination once keeps domain services free
+of terminal concerns. Existing domain-error output remains unchanged.
+
+### Clarification of review issue 5: integer overflow
+
+Python integers can represent `10**310`, and the positive-integer validator
+accepts it. However, `ceil(hours / robot.hours)` performs `/` first, creating a
+floating-point result. Floats have a finite range (about `1.8e308`), so that
+division can raise `OverflowError` before `ceil` runs. For example,
+`plan_standby({}, 10**310)` currently fails inside standby search-bound creation.
+The same calculation exists in both allocation strategies.
+
+This is a numerical implementation limit, not a negative/non-integer input error.
+It is unlikely for normal manually entered requests, but contradicts accepting
+arbitrarily large positive integers without a documented numerical limit.
+For positive integers, `(hours + robot.hours - 1) // robot.hours` computes the
+ceiling exactly without a float; retain the existing `+ 1` search margin after it.
+This recommended change is not implemented in this task.
+
+Integer division only fixes bound arithmetic. It does not make a search over
+astronomical counts feasible. Search optimisation and a deliberate supported-scale
+policy need separate consideration; no business input maximum was invented here.
+
+### Updated review assessment
+
+Earlier Level 2/4 records treated terminal-sized searches as low risk. A review
+probe of `fill_shortfall(1000)` took about 3.5 seconds, so those historical
+assessments do not establish current scalability. Cubic growth, numeric overflow,
+the setuptools minimum/SPDX mismatch, and installed-package verification are
+open items in README's Technical Debt. Source tests alone cannot close them.
+
+Documentation now distinguishes strategies from workflows, removes obsolete
+foundation-state claims from current guides, and keeps README concise. Historical
+decision entries above retain their original context.

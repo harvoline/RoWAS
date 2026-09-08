@@ -48,7 +48,7 @@ def _unbounded_caps(shortfall: int) -> dict[str, int]:
     return {robot.name: cap(robot) for robot in ROBOT_TYPES}
 
 
-def _fill_shortfall(shortfall: int) -> Allocation:
+def fill_shortfall(shortfall: int) -> Allocation:
     """Cost-optimised fill of ``shortfall`` hours with no inventory caps."""
     if shortfall <= 0:
         raise ValueError("shortfall must be positive")
@@ -66,9 +66,8 @@ def plan_standby(
 ) -> StandbyPlan:
     """Plan Level 3 standby activation for active inventory + requested hours.
 
-    Validates hours and active counts via the shared Allocator rules (using a
-    throwaway Level 2 strategy call only for validation when capacity is enough,
-    or validating inventory/hours explicitly).
+    Validates hours and active counts via the shared Allocator rules; zero active
+    robots is allowed, since standby can cover the whole request.
 
     Raises:
         EverBotError: invalid hours/counts; or insufficient capacity if the
@@ -76,9 +75,9 @@ def plan_standby(
     """
     # Validate hours + inventory without requiring robots present (zero active
     # is allowed — standby can cover the whole request).
-    Allocator._validate_hours(requested_hours)
+    Allocator.validate_hours(requested_hours)
     assert isinstance(requested_hours, int)
-    available = Allocator._validate_inventory(active_inventory)
+    available = Allocator.validate_inventory(active_inventory)
 
     capacity = active_capacity_hours(available)
     if capacity >= requested_hours:
@@ -89,7 +88,7 @@ def plan_standby(
         )
 
     shortfall = requested_hours - capacity
-    additional = _fill_shortfall(shortfall)
+    additional = fill_shortfall(shortfall)
     return StandbyPlan(
         active_capacity=capacity,
         requested_hours=requested_hours,

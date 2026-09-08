@@ -1,176 +1,106 @@
-# EverBot Solutions — Robot Working Allocation System
+# EverBot Solutions - Robot Working Allocation System
 
-A terminal-based system for allocating work to robots, built for EverBot Solutions.
+A Python 3.10+ terminal application that assigns Bravo, Charlie, and Delta robots
+to client work. Levels 1-4 are implemented; there is no server, GUI, or persistence.
 
-## Status
+## Setup and Run
 
-**Levels 1–3 implemented.** The CLI presents a Level 1/2/3 menu: Level 1 category
-distribution, Level 2 cost-optimised allocation with L1/L2 cost comparison, and
-Level 3 standby robot activation (active capacity first, optional additional
-standby). Foundation scaffolding remains; further levels land as reviewed branches.
-
-## Business Problem
-
-EverBot Solutions assigns specialized robots to fulfil client work requests
-(measured in hours) as efficiently as possible. Each level uses a different
-allocation strategy. Shared robot rules live in [`robots.md`](robots.md);
-per-level specs live under [`features/`](features/).
-
-## Architecture (current)
-
-```
-src/everbot/                 Application package (src-layout)
-  __init__.py                Public API re-exports
-  __main__.py                python -m everbot entry
-  robots.py                  Robot ABC + Bravo/Charlie/Delta
-  errors.py                  EverBotError hierarchy + exact messages
-  allocation.py              Allocation result value object
-  allocator.py               Shared validation + strategy delegation
-  strategies/                AllocationStrategy + CategoryDistribution +
-                             CostOptimised strategies
-  comparison.py              Level 1 vs Level 2 cost comparison
-  standby.py                 Level 3 standby plan (capacity + shortfall fill)
-  cli.py                     Interactive CLI (Level 1/2/3 menu + runners)
-features/                    Per-level specs (level-1.md, level-2.md, level-3.md)
-robots.md                    Shared robot reference
-tests/                       pytest suite mirroring the package
-```
-
-Domain logic stays separate from CLI/I/O (see [`CLAUDE.md`](CLAUDE.md) and
-[`coding-workflow.md`](coding-workflow.md)).
-
-## Technology Stack
-
-| Concern          | Choice                          |
-|-------------------|----------------------------------|
-| Language          | Python (>= 3.10)                |
-| Packaging         | `pyproject.toml` + setuptools (src layout) |
-| Testing           | pytest, pytest-cov              |
-| Linting/formatting| ruff                             |
-| Type checking     | mypy (`strict = true`)          |
-
-## Repository
-
-Hosted on GitHub: [harvoline/RoWAS](https://github.com/harvoline/RoWAS).
-`main` is the stable branch; feature/fix work happens on branches and merges
-via reviewed pull requests (see `coding-workflow.md`).
-
-## Installation
-
-Requires Python 3.10+.
+Create and activate a virtual environment using your platform's standard commands:
 
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate       # Windows: .venv\Scripts\activate
-pip install --upgrade pip
-pip install -e ".[dev]"
 ```
 
-> **Environment note:** if a standard command in this guide doesn't behave as
-> documented on your machine, create a local gitignored `user-setup.md` — see
-> [`documentation-workflow.md`](documentation-workflow.md).
-
-## Running the CLI
+With that environment active:
 
 ```bash
-everbot-allocate
-# or:
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
 python -m everbot
+# Alternative entry point: everbot-allocate
 ```
 
-The CLI first asks you to choose Level 1, 2, or 3. Example Level 2 session
-(see [`features/level-2.md`](features/level-2.md)); choose `2` at the menu:
+Select a level, enter the three robot counts, then the requested hours. Level 4
+accepts one value or several values separated by commas or whitespace, for example
+`12,16,17,10,21`. With inventory Bravo:2, Charlie:3, Delta:2, that example produces
+a total standby cost of $23.
 
-```
-Enter number of robots available:
-Bravo: 2
-Charlie: 3
-Delta: 2
+Successful runs exit 0; invalid input or insufficient capacity exits 1. EOF exits
+1 with an input-ended message; Ctrl+C exits 130 with a cancellation message.
+Termination messages go to stderr without a traceback. Restart to enter a new
+request; no allocation is persisted.
 
-Enter client work hours:
-20
+## Approach and Design Decisions
 
-Cost Optimized Allocation
-Charlie: 1
-Delta: 2
-Total Hours Provided: 21
-Total Charging Cost: $11
+| Level | Approach |
+|---|---|
+| 1 | Require every robot category; minimise excess hours, then robot count |
+| 2 | Minimise charging cost, then excess, robot count, and deterministic type preference; compare against Level 1 |
+| 3 | Use full active capacity, then recommend cost-optimised standby for the shortfall |
+| 4 | Serve clients highest-hours-first from a shared pool; apply Level 2 or standby per client |
 
-Level 1 vs Level 2 Cost Comparison
+`src/everbot/` separates terminal I/O (`cli.py`) from shared validation (`allocator.py`),
+allocation strategies (`strategies/`), and workflow services (`standby.py`,
+`multiclient.py`). Robot definitions and allocation results centralise derived hours
+and costs. Strategies suit Levels 1-2; workflow composition suits Levels 3-4.
 
-Level 1 Cost: $12
-Level 2 Cost: $11
-Cost Difference: $1
-Insight: Level 1 strategy resulted in $1 additional cost due to mandatory usage of multiple robot categories
-```
+Python and standard-library domain code keep dependencies small. Setuptools provides
+packaging; pytest, Ruff, and strict mypy cover behaviour, lint, and source types.
+The src layout separates package code from repository files; current tests also
+add `src` to the import path, so they do not prove packaging works.
 
-## Level 1 — Robot Category Distribution
+## Assumptions and Trade-offs
 
-Assign robots so that (in priority order): every category is represented
-(>=1 Bravo, Charlie, Delta), total hours >= requested with the **least excess**,
-and ties are broken by the **fewest robots**. See
-[`features/level-1.md`](features/level-1.md).
+- Counts are non-negative integers; requested hours are positive integers. Missing
+  inventory categories default to zero; unknown inventory keys are ignored.
+- Robots work once per day. Excess hours are allowed; assigned robots cannot be
+  split across clients. Bravo/Charlie/Delta provide 3/5/8 hours for $2/$3/$4.
+- Standby stock is unbounded. Costs represent charging, not purchase prices.
+- Level 4 preserves input order for equal requests. Its prescribed greedy ordering
+  does not guarantee the lowest total cost across all clients.
+- Exhaustive bounded searches are easy to inspect and preserve exact objectives,
+  but become slow as inventory or standby shortfall grows.
+- CLI termination is handled once in `main()`; reusable runners propagate EOF and
+  interruption to their caller. No retry loop or saved session is provided.
 
-## Level 2 — Cost Optimised Allocation
-
-Minimise total charging cost (no mandatory diversity). Tie-breaks: min excess,
-then fewest robots, then deterministic Delta/Charlie preference. The CLI also
-compares Level 1 vs Level 2 cost. See [`features/level-2.md`](features/level-2.md).
-
-## Level 3 — Standby Robot Activation
-
-Uses full active capacity first. When requested hours exceed capacity,
-recommends the cost-optimised set of additional standby robots to activate/buy
-(no standby inventory prompt; unbounded search). Colours additional lines by
-robot type. See [`features/level-3.md`](features/level-3.md).
-
-## Running Tests
+## Verification
 
 ```bash
-pytest              # run the test suite
-pytest --cov        # with coverage
-ruff check .        # lint
-mypy src            # type-check
+python -m pytest --cov=everbot --cov-report=term-missing
+python -m ruff check .
+python -m mypy src
 ```
 
-## Development Workflow
-
-See [`coding-workflow.md`](coding-workflow.md) and
-[`testing-workflow.md`](testing-workflow.md). In short:
-
-1. One feature/fix per branch, branched from `main`.
-2. Write a failing test before writing implementation code.
-3. Small, coherent commits with messages that explain *why*.
-4. Pull request review before merging into `main`.
-
-## Documentation Map
-
-| File | Purpose |
-|---|---|
-| [`CLAUDE.md`](CLAUDE.md) | Living project context for AI/developer onboarding |
-| [`robots.md`](robots.md) | Shared robot rules (single source of truth) |
-| [`features/level-1.md`](features/level-1.md) | Level 1 category-distribution spec |
-| [`features/level-2.md`](features/level-2.md) | Level 2 cost-optimised allocation + comparison |
-| [`features/level-3.md`](features/level-3.md) | Level 3 standby robot activation |
-| [`tools.md`](tools.md) | Log of AI tool usage and outcomes |
-| [`solutions.md`](solutions.md) | Engineering reasoning behind significant decisions |
-| [`app-workflow.md`](app-workflow.md) | Functional/business workflow |
-| [`coding-workflow.md`](coding-workflow.md) | Git branching, commit, and PR discipline |
-| [`testing-workflow.md`](testing-workflow.md) | TDD cycle and test categorisation strategy |
-| [`rules.md`](rules.md) | Non-negotiable project and safety rules |
-| [`documentation-workflow.md`](documentation-workflow.md) | When/how documentation must be updated |
-| [`orchestrator-workflow.md`](orchestrator-workflow.md) | Multi-agent delegation workflow |
-
-## Known Limitations / Open Decisions
-
-- **Higher levels beyond 3 not yet implemented.** Levels 1–2 use strategy
-  subclasses; Level 3 uses a standby workflow module + menu runners.
-- **Repository hosting: decided.** GitHub, at
-  [harvoline/RoWAS](https://github.com/harvoline/RoWAS) (`origin`).
-- **CI/CD: explicitly deferred.** See `solutions.md`; revisit when justified.
-- **PR review is convention-enforced, not technically gated.** Private repo on
-  GitHub Free; see `rules.md` "Pull Request Review".
+Tests cover allocation examples, validation, client ordering, inventory consumption,
+formatting, and termination through the process entry point. See
+[testing-workflow.md](testing-workflow.md) for coverage and remaining gaps.
 
 ## Technical Debt
 
-None yet. This section will track deliberate shortcuts as they are introduced.
+With additional time, priorities are:
+
+1. Reduce the cubic search space and add realistic scale benchmarks. A review probe
+   of a 1,000-hour standby shortfall took about 3.5 seconds on one machine.
+2. Replace floating-point search-bound division with integer ceiling division.
+   Very large valid integers currently raise `OverflowError`; this alone would not
+   solve the search-performance problem. See the explanation in [solutions.md](solutions.md).
+3. Align the setuptools minimum with SPDX license metadata support (77+), and verify
+   a built wheel and both installed entry points outside the source checkout.
+4. Add independent optimality checks over small inventories and more failure-path
+   coverage. Passing source tests is not installed-package verification.
+
+CI/CD remains explicitly deferred by owner decision. PR review is enforced by
+convention; branch protection is unavailable under the recorded repository setup.
+Higher allocation levels require new owner requirements.
+
+## Project Documentation
+
+- [Robot rules](robots.md), [Level 1](features/level-1.md), [Level 2](features/level-2.md),
+  [Level 3](features/level-3.md), [Level 4](features/level-4.md)
+- [Application flow](app-workflow.md), [project context](CLAUDE.md), [decision records](solutions.md)
+- [Coding workflow](coding-workflow.md), [testing workflow](testing-workflow.md),
+  [documentation workflow](documentation-workflow.md), [project rules](rules.md)
+- [Review/delegation workflow](orchestrator-workflow.md), [AI tool log](tools.md)
+
+Repository: [harvoline/RoWAS](https://github.com/harvoline/RoWAS). Keep machine-specific
+workarounds in a local, gitignored `user-setup.md`.

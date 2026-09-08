@@ -11,6 +11,12 @@ from everbot.errors import (
     MissingCategoryError,
     NoRobotsError,
 )
+from everbot.multiclient import (
+    ClientPlan,
+    MultiClientPlan,
+    parse_client_hours,
+    plan_multi_client,
+)
 from everbot.robots import ROBOT_TYPES, Bravo, Charlie, Delta, Robot
 from everbot.standby import StandbyPlan, plan_standby
 from everbot.strategies import (
@@ -31,6 +37,10 @@ __all__ = [
     "compare_levels",
     "StandbyPlan",
     "plan_standby",
+    "ClientPlan",
+    "MultiClientPlan",
+    "plan_multi_client",
+    "parse_client_hours",
     "strategy_for_level",
     "Robot",
     "Bravo",

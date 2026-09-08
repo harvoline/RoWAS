@@ -30,9 +30,9 @@ class Allocator:
         return self._strategy
 
     def allocate(self, inventory: Mapping[str, object], requested_hours: object) -> Allocation:
-        self._validate_hours(requested_hours)
-        assert isinstance(requested_hours, int)  # narrowed by _validate_hours
-        available = self._validate_inventory(inventory)
+        self.validate_hours(requested_hours)
+        assert isinstance(requested_hours, int)  # narrowed by validate_hours
+        available = self.validate_inventory(inventory)
 
         if sum(available.values()) == 0:
             raise NoRobotsError()
@@ -40,13 +40,13 @@ class Allocator:
         return self._strategy.allocate(available, requested_hours)
 
     @staticmethod
-    def _validate_hours(hours: object) -> None:
+    def validate_hours(hours: object) -> None:
         # Strictly a positive integer (reject bools, floats, strings, None).
         if isinstance(hours, bool) or not isinstance(hours, int) or hours <= 0:
             raise InvalidWorkHoursError()
 
     @staticmethod
-    def _validate_inventory(inventory: Mapping[str, object]) -> dict[str, int]:
+    def validate_inventory(inventory: Mapping[str, object]) -> dict[str, int]:
         # Non-negative integers only; unknown keys ignored, missing default to 0.
         available: dict[str, int] = {}
         for name in ROBOT_NAMES:

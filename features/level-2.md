@@ -63,6 +63,8 @@ Then Level 2 specific:
 `MissingCategoryError` does **not** apply to Level 2.
 
 ## CLI
+Shared EOF/Ctrl+C handling: [Application Workflow](../app-workflow.md).
+
 After inventory + hours, the interactive flow prints the Level 2 block (header
 wording matches owner examples: "Cost Optimized Allocation") then the comparison
 block. See examples above.
@@ -71,3 +73,4 @@ block. See examples above.
 | Version | Date | Change |
 |---------|------|--------|
 | 1.0.0 | 2026-09-07 | Initial Level 2 cost-optimised strategy + L1/L2 comparison. |
+| 1.0.0 (docs) | 2026-09-08 | Linked shared EOF/Ctrl+C handling; allocation rules unchanged. |

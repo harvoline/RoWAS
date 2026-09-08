@@ -182,3 +182,75 @@ in `orchestrator-workflow.md` "Limitations and Risks of This Architecture"
 — notably that nothing technically enforces the Orchestrator actually
 running the coverage assessment before implementing (same category of gap
 as the already-accepted convention-only PR review).
+
+---
+
+## 2026-09-08 — Level 4 Multi-Client Allocation
+
+**Tool used:** Claude Code (Claude Opus 5), acting as Orchestrator per
+`orchestrator-workflow.md`.
+
+**Purpose:** Implement Level 4 — several clients served from one active robot
+inventory, prioritised by highest hours requested, with standby recommendations
+for whatever the pool cannot cover.
+
+**Input/context provided:** The owner's Level 4 requirement text with three
+sample input forms, followed by the clarification "level 4 = level 3 +
+changes / improvement — previously only 1 working [hours] allowed", and an
+explicit instruction not to commit, push, or open a PR.
+
+**What the tool did:**
+
+1. Read the full rule/workflow/spec/code set before proposing anything, and
+   confirmed a green baseline (94 tests, ruff, mypy strict) before changing code.
+2. Asked one blocking question — how the shared pool behaves across clients —
+   and, when the owner declined to re-litigate Level 3, resolved it from
+   `robots.md`'s once-per-day rule (whole-robot consumption) and stated the
+   assumption instead of asking again.
+3. Wrote `features/level-4.md` first, including a worked example whose numbers
+   were verified numerically before being written down.
+4. Followed TDD: `tests/test_multiclient.py` (RED, module absent) → `multiclient.py`
+   (GREEN) → CLI tests (RED) → menu option 4 + `run_level_4` (GREEN) → refactor
+   (Levels 3 and 4 now share one standby-line renderer).
+5. Promoted `Allocator.validate_hours` / `validate_inventory` and
+   `standby.fill_shortfall` from private to public, Level 4 being the second real
+   caller and `standby.py` having already reached into the private names.
+6. Ran the CLI end to end on the owner's `12,16,17,10,21` example to confirm the
+   rendered output matches the spec, rather than trusting the tests alone.
+7. Recorded the coverage assessment — including why no specialist subagent was
+   delegated to — in `solutions.md`, and refreshed the stale "Current State"
+   section of `testing-workflow.md`.
+
+**Accepted / rejected / modified:** Pending project owner review. Nothing was
+committed, pushed, or opened as a PR, per the owner's explicit instruction; the
+work sits uncommitted on `TR05_LEVEL_4`.
+
+**Limitations / risks discovered:**
+
+- Greedy highest-hours-first service can cost more in total standby than a
+  globally optimised split across clients. This is the stated requirement, not a
+  defect, and is recorded as a trade-off in `solutions.md`.
+- The menu's invalid-choice message changed from "1, 2, or 3" to "1, 2, 3, or 4";
+  its existing test was updated deliberately, which is the only Level 1–3
+   behaviour touched by this change.
+
+## 2026-09-08 - Review follow-up: termination and documentation
+
+**Tool used:** OpenCode, with a read-only documentation audit subagent.
+
+**Owner request:** Implement review item 3 (clean EOF/Ctrl+C handling), clarify
+item 5 (large-integer overflow), and refresh project documentation with a short
+README covering approach, decisions, assumptions, trade-offs, and improvements.
+
+**Work:** Added failing terminal-termination tests before the `main()` fix, then
+verified menu/all-level exits and subprocess EOF behaviour. Refreshed current
+project and agent guides, linked shared terminal behaviour from the level specs,
+and recorded outstanding review gaps without changing their implementations.
+
+**Limitations:** Ctrl+C is tested through injected KeyboardInterrupt, not a real
+terminal signal. Wheel installation is not verified. Overflow, search scalability,
+and build metadata compatibility remain open. No commit or push requested.
+
+**Verification:** Full suite passed (152 tests, 96% statement coverage); strict
+mypy passed on 14 source files. Subprocess coverage is not collected by the
+current coverage configuration, so entry-point execution is proved by assertions.

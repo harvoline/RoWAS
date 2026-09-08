@@ -1,6 +1,6 @@
 """Interactive command-line interface for the EverBot allocation system.
 
-Top-level menu selects Level 1, 2, or 3; each level has a separate runner so
+Top-level menu selects Level 1, 2, 3, or 4; each level has a separate runner so
 logics do not collide. Colour is optional (on for real terminals, off in tests).
 """
 
@@ -13,6 +13,7 @@ from everbot.allocation import Allocation
 from everbot.allocator import Allocator
 from everbot.comparison import CostComparison, compare_levels
 from everbot.errors import EverBotError, InvalidRobotCountError, InvalidWorkHoursError
+from everbot.multiclient import MultiClientPlan, parse_client_hours, plan_multi_client
 from everbot.robots import ROBOT_TYPES
 from everbot.standby import StandbyPlan, plan_standby
 from everbot.strategies.category_distribution import CategoryDistributionStrategy
@@ -85,6 +86,25 @@ def read_hours(
         return int(raw)
     except ValueError:
         raise InvalidWorkHoursError() from None
+
+
+def read_client_hours(
+    input_fn: Callable[[str], str],
+    output_fn: Callable[[str], None],
+    *,
+    color: bool = False,
+) -> list[int]:
+    """Prompt for one or more clients' work hours on a single line."""
+    output_fn("")
+    output_fn(
+        _c(
+            "Enter client working hours (single, comma, or space separated):",
+            _BOLD,
+            color=color,
+        )
+    )
+    raw = input_fn("Client working hours: ")
+    return parse_client_hours(raw)
 
 
 def format_allocation(allocation: Allocation, *, color: bool = False) -> str:
@@ -163,6 +183,19 @@ def format_comparison(comparison: CostComparison, *, color: bool = False) -> str
     return "\n".join(lines)
 
 
+def _standby_lines(allocation: Allocation, indent: str, *, color: bool) -> list[str]:
+    """Render the winning standby robots, one coloured line per robot type."""
+    lines: list[str] = []
+    for rt in ROBOT_TYPES:
+        count = allocation.count_of(rt.name)
+        if count <= 0:
+            continue
+        line = f"{indent}{rt.name}: {count} - cost ${count * rt.cost}"
+        robot_colour = _ROBOT_COLOURS.get(rt.name, "")
+        lines.append(_c(line, robot_colour, color=color) if robot_colour else line)
+    return lines
+
+
 def format_standby_plan(plan: StandbyPlan, *, color: bool = False) -> str:
     """Render Level 3 capacity + optional winning additional standby block."""
     lines = _heading("Standby Robot Activation", color=color)
@@ -174,17 +207,43 @@ def format_standby_plan(plan: StandbyPlan, *, color: bool = False) -> str:
 
     lines.append("")
     lines.append(_c("  Additional Standby Robots Required:", _BOLD, color=color))
-    for rt in ROBOT_TYPES:
-        count = plan.additional.count_of(rt.name)
-        if count <= 0:
-            continue
-        line_cost = count * rt.cost
-        line = f"  {rt.name}: {count} - cost ${line_cost}"
-        robot_colour = _ROBOT_COLOURS.get(rt.name, "")
-        if robot_colour:
-            lines.append(_c(line, robot_colour, color=color))
-        else:
-            lines.append(line)
+    lines.extend(_standby_lines(plan.additional, "  ", color=color))
+    return "\n".join(lines)
+
+
+def format_multi_client_plan(plan: MultiClientPlan, *, color: bool = False) -> str:
+    """Render Level 4: shared active capacity, then each client in service order."""
+    lines = _heading("Multi-Client Allocation", color=color)
+    lines.append("")
+    lines.append(f"  Active Robot Capacity: {plan.active_capacity} hours")
+    lines.append(f"  Clients: {plan.client_count} (served highest hours first)")
+
+    for client in plan.clients:
+        lines.append("")
+        lines.append(
+            _c(
+                f"  Client {client.number}: {client.requested_hours} hours requested",
+                _BOLD,
+                color=color,
+            )
+        )
+        if client.allocated is not None:
+            assigned = ", ".join(
+                f"{rt.name}: {client.allocated.count_of(rt.name)}"
+                for rt in ROBOT_TYPES
+                if client.allocated.count_of(rt.name) > 0
+            )
+            lines.append(
+                f"    Active Robots Allocated: {assigned} "
+                f"({client.allocated.provided_hours} hours)"
+            )
+        if client.additional is not None:
+            lines.append(_c("    Additional Standby Robots Required:", _BOLD, color=color))
+            lines.extend(_standby_lines(client.additional, "      ", color=color))
+
+    lines.append("")
+    total = f"  Total Standby Cost: ${plan.total_standby_cost}"
+    lines.append(_c(total, _BOLD, _GREEN, color=color))
     return "\n".join(lines)
 
 
@@ -194,15 +253,16 @@ def read_level_choice(
     *,
     color: bool = False,
 ) -> int:
-    """Prompt for Level 1, 2, or 3. Returns the chosen level number."""
+    """Prompt for Level 1, 2, 3, or 4. Returns the chosen level number."""
     output_fn(_c("Select allocation level:", _BOLD, color=color))
     output_fn("  1. Level 1 — Robot Category Distribution")
     output_fn("  2. Level 2 — Cost Optimised Allocation")
     output_fn("  3. Level 3 — Standby Robot Activation")
+    output_fn("  4. Level 4 — Multi-Client Allocation")
     output_fn("")
-    raw = input_fn("Choice (1/2/3): ").strip()
-    if raw not in {"1", "2", "3"}:
-        raise EverBotError("Error: Please choose level 1, 2, or 3.")
+    raw = input_fn("Choice (1/2/3/4): ").strip()
+    if raw not in {"1", "2", "3", "4"}:
+        raise EverBotError("Error: Please choose level 1, 2, 3, or 4.")
     return int(raw)
 
 
@@ -274,13 +334,35 @@ def run_level_3(
     return 0
 
 
+def run_level_4(
+    input_fn: Callable[[str], str] = input,
+    output_fn: Callable[[str], None] = print,
+    *,
+    color: bool = False,
+) -> int:
+    """Run Level 4 multi-client allocation over one shared active inventory."""
+    try:
+        inventory = read_inventory(input_fn, output_fn, color=color)
+        hours = read_client_hours(input_fn, output_fn, color=color)
+        plan = plan_multi_client(inventory, hours)
+    except EverBotError as err:
+        output_fn("")
+        output_fn(_c(str(err), _BOLD, _RED, color=color))
+        return 1
+
+    output_fn("")
+    output_fn(format_multi_client_plan(plan, color=color))
+    output_fn("")
+    return 0
+
+
 def run(
     input_fn: Callable[[str], str] = input,
     output_fn: Callable[[str], None] = print,
     *,
     color: bool = False,
 ) -> int:
-    """Show the Level 1/2/3 menu, then dispatch to the chosen runner.
+    """Show the Level 1/2/3/4 menu, then dispatch to the chosen runner.
 
     Returns a process exit code (0 ok, 1 error).
     Colour defaults off so unit tests see plain text; ``main`` enables it on TTYs.
@@ -297,11 +379,21 @@ def run(
         return run_level_1(input_fn, output_fn, color=color)
     if level == 2:
         return run_level_2(input_fn, output_fn, color=color)
-    return run_level_3(input_fn, output_fn, color=color)
+    if level == 3:
+        return run_level_3(input_fn, output_fn, color=color)
+    return run_level_4(input_fn, output_fn, color=color)
 
 
 def main() -> int:
-    return run(color=sys.stdout.isatty())
+    """Run the terminal session, handling EOF and user cancellation once."""
+    try:
+        return run(color=sys.stdout.isatty())
+    except EOFError:
+        print("\nError: Input ended before allocation completed.", file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        print("\nAllocation cancelled.", file=sys.stderr)
+        return 130
 
 
 if __name__ == "__main__":

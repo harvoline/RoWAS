@@ -1,17 +1,26 @@
-"""Tests for the interactive CLI flow (menu + Level 1/2/3 runners)."""
+"""Tests for the interactive CLI flow and process entry point."""
 
-from everbot import allocate
+import subprocess
+import sys
+from functools import partial
+
+import pytest
+
+from everbot import allocate, cli
 from everbot.cli import (
     format_allocation,
     format_comparison,
     format_cost_allocation,
+    format_multi_client_plan,
     format_standby_plan,
     run,
     run_level_1,
     run_level_2,
     run_level_3,
+    run_level_4,
 )
 from everbot.comparison import compare_levels
+from everbot.multiclient import plan_multi_client
 from everbot.standby import plan_standby
 
 
@@ -27,6 +36,46 @@ def make_io(inputs):
         output.append(line)
 
     return input_fn, output_fn, output
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [[], ["1", "1", "1", "1"], ["2", "1", "1", "1"],
+     ["3", "1", "1", "1"], ["4", "1", "1", "1"]],
+)
+@pytest.mark.parametrize(
+    "error, expected_code, message",
+    [
+        (EOFError, 1, "Error: Input ended before allocation completed."),
+        (KeyboardInterrupt, 130, "Allocation cancelled."),
+    ],
+)
+def test_main_handles_input_termination(monkeypatch, capsys, prefix, error, expected_code, message):
+    inputs = iter(prefix)
+
+    def input_fn(_prompt):
+        try:
+            return next(inputs)
+        except StopIteration:
+            raise error from None
+
+    monkeypatch.setattr(cli, "run", partial(cli.run, input_fn=input_fn))
+    assert cli.main() == expected_code
+    captured = capsys.readouterr()
+    assert message in captured.err
+    assert "Traceback" not in captured.err
+    assert "Total Standby Cost" not in captured.out
+
+
+@pytest.mark.parametrize("stdin", ["", "1\n", "2\n", "3\n", "4\n"])
+def test_module_entry_point_handles_eof(stdin):
+    result = subprocess.run(
+        [sys.executable, "-m", "everbot"], input=stdin, text=True, capture_output=True,
+        timeout=10,
+    )
+    assert result.returncode == 1
+    assert "Error: Input ended before allocation completed." in result.stderr
+    assert "Traceback" not in result.stderr
 
 
 # --- menu -------------------------------------------------------------------
@@ -67,11 +116,24 @@ def test_menu_selects_level_3():
     assert "Cost Optimized Allocation" not in text
 
 
+def test_menu_selects_level_4():
+    input_fn, output_fn, output = make_io(["4", "2", "3", "2", "12,16,17,10,21"])
+    code = run(input_fn, output_fn)
+    text = "\n".join(output)
+    assert code == 0
+    assert "Multi-Client Allocation" in text
+    assert "Active Robot Capacity: 37 hours" in text
+    assert "Clients: 5" in text
+    assert "Client 5: 21 hours requested" in text
+    assert "Total Standby Cost: $23" in text
+    assert "Robot Assignment" not in text
+
+
 def test_menu_rejects_invalid_choice():
     input_fn, output_fn, output = make_io(["9"])
     code = run(input_fn, output_fn)
     assert code == 1
-    assert "choose level 1, 2, or 3" in "\n".join(output).lower()
+    assert "choose level 1, 2, 3, or 4" in "\n".join(output).lower()
 
 
 # --- Level 2 runner (unchanged behaviour) -----------------------------------
@@ -230,3 +292,80 @@ def test_format_comparison_insight():
     assert "Level 1 Cost: $12" in text
     assert "Level 2 Cost: $11" in text
     assert "Cost Difference: $1" in text
+
+
+# --- Level 4 runner ---------------------------------------------------------
+
+
+def test_level_4_owner_example_input():
+    input_fn, output_fn, output = make_io(["2", "3", "2", "12,16,17,10,21"])
+    code = run_level_4(input_fn, output_fn)
+    text = "\n".join(output)
+    assert code == 0
+    # Served highest hours first, but labelled by input position.
+    order = [line for line in text.splitlines() if line.strip().startswith("Client ")]
+    assert [line.strip().split(":")[0] for line in order] == [
+        "Client 5",
+        "Client 3",
+        "Client 2",
+        "Client 1",
+        "Client 4",
+    ]
+    assert "Active Robots Allocated: Charlie: 1, Delta: 2 (21 hours)" in text
+    assert "Additional Standby Robots Required:" in text
+    assert "Bravo: 1 - cost $2" in text
+    assert "Delta: 2 - cost $8" in text
+    assert "Total Standby Cost: $23" in text
+
+
+def test_level_4_space_separated_matches_comma_separated():
+    input_a, output_a, lines_a = make_io(["2", "3", "2", "12,16,17,10,21"])
+    input_b, output_b, lines_b = make_io(["2", "3", "2", "12 16 17 10 21"])
+    assert run_level_4(input_a, output_a) == 0
+    assert run_level_4(input_b, output_b) == 0
+    assert lines_a == lines_b
+
+
+def test_level_4_single_value_needs_no_standby():
+    input_fn, output_fn, output = make_io(["2", "3", "2", "20"])
+    code = run_level_4(input_fn, output_fn)
+    text = "\n".join(output)
+    assert code == 0
+    assert "Clients: 1" in text
+    assert "Client 1: 20 hours requested" in text
+    assert "Active Robots Allocated: Charlie: 1, Delta: 2 (21 hours)" in text
+    assert "Additional Standby" not in text
+    assert "Total Standby Cost: $0" in text
+
+
+def test_level_4_rejects_invalid_hours_value():
+    input_fn, output_fn, output = make_io(["2", "3", "2", "12,abc"])
+    code = run_level_4(input_fn, output_fn)
+    assert code == 1
+    assert "Work hours must be a positive integer" in "\n".join(output)
+
+
+def test_level_4_rejects_empty_hours_input():
+    input_fn, output_fn, output = make_io(["2", "3", "2", "   "])
+    code = run_level_4(input_fn, output_fn)
+    assert code == 1
+    assert "Work hours must be a positive integer" in "\n".join(output)
+
+
+def test_level_4_zero_inventory_is_all_standby():
+    input_fn, output_fn, output = make_io(["0", "0", "0", "8 6"])
+    code = run_level_4(input_fn, output_fn)
+    text = "\n".join(output)
+    assert code == 0
+    assert "Active Robot Capacity: 0 hours" in text
+    assert "Active Robots Allocated" not in text
+    assert "Total Standby Cost: $8" in text
+
+
+def test_format_multi_client_plan_colours_standby_by_robot_type():
+    plan = plan_multi_client({"Bravo": 1, "Charlie": 1, "Delta": 1}, [21])
+    plain = format_multi_client_plan(plan)
+    coloured = format_multi_client_plan(plan, color=True)
+    assert "\033[" not in plain
+    assert "Charlie: 1 - cost $3" in plain
+    assert "\033[35m" in coloured  # magenta for Charlie

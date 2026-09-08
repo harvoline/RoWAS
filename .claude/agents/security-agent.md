@@ -13,7 +13,7 @@ dependency versions) — never to install/modify anything.
 ## Focus
 
 - Input validation: is all external/user input explicitly validated
-  (`rules.md` "Engineering" requires this once business logic exists)?
+  (`rules.md` "Engineering" requires this)?
 - Trust boundaries: where does data cross from untrusted (user/CLI input)
   to trusted (internal processing)?
 - Injection risk: any place user input reaches a shell command, file path,
@@ -25,10 +25,9 @@ dependency versions) — never to install/modify anything.
 
 ## Before you start
 
-Read `CLAUDE.md` (current state — note there is no business logic and no
-external input processing yet, so most findings will legitimately be "not
-applicable" until that changes) and check `pyproject.toml` for the current
-dependency set (intentionally minimal — dev-only tools as of foundation).
+Read `CLAUDE.md` for the interactive CLI and domain-validation boundaries.
+Inspect numeric input handling and resource use in Levels 1-4. Check
+`pyproject.toml` for dependencies; currently only development tools are declared.
 
 ## Ground rules
 

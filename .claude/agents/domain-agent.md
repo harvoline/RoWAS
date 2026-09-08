@@ -25,10 +25,8 @@ Orchestrator's job.
 
 ## Before you start
 
-Read `CLAUDE.md` ("Domain Context" — note it explicitly says no domain
-rules exist yet, so don't assume any) and `app-workflow.md` for any domain
-flow already documented. If no domain model exists yet, say so — don't
-backfill one from assumption.
+Read `CLAUDE.md`, `robots.md`, relevant `features/level-*.md`, and
+`app-workflow.md` for implemented Levels 1-4. Do not invent further domain rules.
 
 ## Ground rules
 
